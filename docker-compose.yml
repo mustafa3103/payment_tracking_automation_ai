@@ -1,0 +1,67 @@
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PROTOCOL=http
+      - GENERIC_TIMEZONE=Europe/Istanbul
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+    env_file:
+      - .env
+    volumes:
+      - n8n_data:/home/node/.n8n
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:uid=1000,gid=1000
+      - /home/node/.cache:uid=1000,gid=1000
+
+  waha:
+    image: devlikeapro/waha:arm
+    container_name: waha
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WAHA_DASHBOARD_ENABLED=true
+      - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USER}
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASS}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WHATSAPP_RESTART_ALL_SESSIONS=true
+      - WHATSAPP_START_SESSION=default
+      - WHATSAPP_HOOK_URL=${WAHA_WEBHOOK_URL}
+      - WHATSAPP_HOOK_EVENTS=message
+    env_file:
+      - .env
+    volumes:
+      - waha_data:/app/.sessions
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  report-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.report
+    container_name: report-api
+    ports:
+      - "127.0.0.1:5050:5050"
+    environment:
+      - COMPANY_NAME=${COMPANY_NAME:-Payment Tracking System}
+      - REPORT_API_PORT=5050
+    env_file:
+      - .env
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  n8n_data:
+    external: true
+    name: payment_tracking_n8n_data
+  waha_data:

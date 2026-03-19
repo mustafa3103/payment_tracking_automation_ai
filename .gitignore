@@ -1,0 +1,26 @@
+# Environment
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Reports output
+reports/*.pdf
+reports/test/*.pdf
+
+# Data
+data/*.xlsx
+data/*.csv
+
+# macOS
+.DS_Store
+
+# n8n
+workflows/*.bak.json

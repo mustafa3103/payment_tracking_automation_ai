@@ -1,0 +1,3541 @@
+{
+  "name": "Payment_Tracking",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "YOUR_WEBHOOK_UUID",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -224,
+        -128
+      ],
+      "id": "c5fa5e3f-dcf2-4ff0-a371-63c29405208a",
+      "name": "Webhook",
+      "webhookId": "YOUR_WEBHOOK_UUID"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1376130a-5f39-4710-9065-aa7124e282a3",
+              "leftValue": "={{ $json.body.payload.from }}",
+              "rightValue": "YOUR_WHATSAPP_CHAT_ID",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -16,
+        -128
+      ],
+      "id": "4f216aef-c9c2-40c2-994f-941b18fafbbd",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_WAHA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session",
+              "value": "default"
+            },
+            {
+              "name": "chatId",
+              "value": "={{ $('Webhook').first().json.body.payload.from }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.response }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1328,
+        -224
+      ],
+      "id": "dfe8dc42-1a1e-4fcb-a52e-3bfac24ce115",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_GEMINI_API_KEY",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        416,
+        -224
+      ],
+      "id": "43be69bc-84c1-4a21-84cd-88a5cf16f83d",
+      "name": "Gemini NLU",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_ID",
+          "mode": "list",
+          "cachedResultName": "mock_data_final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_KISILER_GID",
+          "mode": "list",
+          "cachedResultName": "Kisiler",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_KISILER_GID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        544,
+        -224
+      ],
+      "id": "827bdef2-8f20-4b25-ad57-24da17e3a369",
+      "name": "Google Sheets - Get Clients",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_ID",
+          "mode": "list",
+          "cachedResultName": "mock_data_final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_ALACAKLAR_GID",
+          "mode": "list",
+          "cachedResultName": "Alacaklar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_ALACAKLAR_GID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        960,
+        -224
+      ],
+      "id": "56505232-672c-44fd-8960-dc3fe51c519e",
+      "name": "Google Sheets - Get Receivables",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const clients = $('Collect Clients').first().json.clients;\nconst receivables = $input.all().map(i => i.json);\n\nlet intent = 'out_of_scope', clientName = null, phoneNum = null, receivableNo = null;\nlet clientId = null, reportYear = null, reportMonth = null;\ntry {\n  const nluOutput = $('Intent Parse').first().json;\n  const raw = nluOutput.text || nluOutput.output || nluOutput.content || JSON.stringify(nluOutput);\n  const match = raw.match(/\\{[\\s\\S]*?\\}/);\n  if (match) {\n    const parsed = JSON.parse(match[0]);\n    intent = parsed.intent    || 'out_of_scope';\n    clientName = parsed.name      || null;\n    phoneNum  = parsed.phone   || null;\n    receivableNo = parsed.receivable_no || null;\n    clientId = parsed.client_id   || null;\n    reportYear = parsed.report_year ? Number(parsed.report_year) : null;\n    reportMonth  = parsed.report_month  ? Number(parsed.report_month)  : null;\n  }\n} catch(e) { intent = 'out_of_scope'; }\n\n// ── Report intents ───────────────────────────────────────────────────────────\nif (intent === 'general_report') {\n  return [{ json: { action: 'generate_report', tip: 'general' } }];\n}\nif (intent === 'weekly_report') {\n  return [{ json: { action: 'generate_report', tip: 'weekly' } }];\n}\nif (intent === 'yearly_report') {\n  const bugun = new Date();\n  const yil = reportYear || (bugun.getFullYear() - 1);\n  return [{ json: { action: 'generate_report', tip: 'yearly', yil } }];\n}\nif (intent === 'monthly_report') {\n  const bugun = new Date();\n  const yil = reportYear || (bugun.getMonth() === 0 ? bugun.getFullYear() - 1 : bugun.getFullYear());\n  const ay  = reportMonth  || (bugun.getMonth() === 0 ? 12 : bugun.getMonth());\n  return [{ json: { action: 'generate_report', tip: 'monthly', yil, ay } }];\n}\nif (intent === 'client_report') {\n  let k = null;\n  if (clientId) k = clients.find(ki => ki.client_id === clientId);\n  else if (isim) k = clients.find(ki => ki.full_name && ki.full_name.toLowerCase().includes(clientName.toLowerCase()));\n  if (!k) return [{ json: { response: `\"${clientName || clientId || 'Client'}\" not found.` } }];\n  const kAls = receivables.filter(a => a.client_id === k.client_id || a.phone === k.phone);\n  return [{ json: { action: 'generate_report', tip: 'client', kisi: k, kisi_alacaklar: kAls } }];\n}\n\nfunction formatAmount(n) { return (Number(n)||0).toLocaleString('en-US') + ' TL'; }\nfunction statusEmoji(d) { return d==='Paid'?'✅':d==='Partial'?'🟡':d==='Unpaid'?'🔴':'⚪'; }\nfunction parseDate(s) {\n  if (!s) return null;\n  const p = s.split('.');\n  return p.length===3 ? new Date(p[2],p[1]-1,p[0]) : null;\n}\nfunction daysDiff(s) {\n  const t = parseDate(s);\n  return t ? Math.floor((Date.now()-t.getTime())/86400000) : 0;\n}\n\nlet response = '';\n\nif (intent === 'client_query' && isim) {\n  const searchName = clientName.toLowerCase().trim();\n  const found = clients.filter(k => k.full_name && k.full_name.toLowerCase().includes(searchName));\n  if (found.length === 0) {\n    response = `\"${isim}\" record not found.\\nPlease enter the full name or phone number.`;\n  } else if (found.length > 1) {\n    response = `\"${isim}\" found ${found.length} people:\\n\\n`;\n    found.forEach((k,i) => { response += `${i+1}. ${k.full_name} — ${k.company||'-'}\\n   📞 ${k.phone}\\n\\n`; });\n    response += 'Please re-query with the phone number.';\n  } else {\n    const k = found[0];\n    const records = receivables.filter(a => a.phone === k.phone);\n    response = `👤 *${k.full_name}* — ${k.company||'-'}\\n`;\n    if (k.notes) response += `📝 Note: ${k.notes}\\n`;\n    response += '\\n';\n    if (records.length === 0) {\n      response += 'No records found.';\n    } else {\n      let total = 0;\n      records.forEach(a => {\n        const remaining = Number(a.remaining_amount)||0; total += remaining;\n        response += `🏗️ ${a.project_name} / ${a.work_description}\\n`;\n        response += `💰 Total: ${formatAmount(a.total_amount)} | Kalan: ${formatAmount(remaining)}\\n`;\n        response += `📅 Vade: ${a.due_date||'-'} | ${statusEmoji(a.status)} ${a.status}\\n\\n`;\n      });\n      response += `─────────────────\\n💳 *Total Remaining: ${formatAmount(total)}*`;\n    }\n  }\n} else if (intent === 'phone_query' && telefon) {\n  const searchPhone = String(phoneNum).replace(/[\\s\\-\\(\\)]/g,'');\n  const k = clients.find(k => k.phone && k.phone.replace(/[\\s\\-\\(\\)]/g,'')===araTel);\n  if (!k) {\n    response = `No record found for this number: ${telefon}`;\n  } else {\n    const records = receivables.filter(a => a.phone===k.phone);\n    response = `👤 *${k.full_name}* — ${k.company||'-'}\\n\\n`;\n    let total = 0;\n    records.forEach(a => {\n      const remaining = Number(a.remaining_amount)||0; total += remaining;\n      response += `🏗️ ${a.project_name} / ${a.work_description}\\n`;\n      response += `💰 Kalan: ${formatAmount(remaining)} | ${statusEmoji(a.status)} ${a.status}\\n`;\n      response += `📅 Vade: ${a.due_date||'-'}\\n\\n`;\n    });\n    response += `─────────────────\\n💳 *Total Remaining: ${formatAmount(total)}*`;\n  }\n} else if (intent === 'receivable_query' && receivableNo) {\n  const no = String(receivableNo).toUpperCase().trim();\n  const a = receivables.find(a => a.receivable_no===no);\n  if (!a) {\n    response = `${no} receivable record not found.`;\n  } else {\n    const k = clients.find(k => k.phone===a.phone);\n    response = `📋 *Alacak: ${a.receivable_no}*\\n`;\n    response += `👤 ${k?k.full_name:a.phone} — ${k?(k.company||'-'):'-'}\\n\\n`;\n    response += `🏗️ ${a.project_name} / ${a.work_description}\\n`;\n    response += `💰 Total: ${formatAmount(a.total_amount)} | Kalan: ${formatAmount(a.remaining_amount)}\\n`;\n    response += `📅 Vade: ${a.due_date||'-'} | ${statusEmoji(a.status)} ${a.status}`;\n    if (a.payment_date) response += ` | Paid: ${a.payment_date}`;\n  }\n} else if (intent === 'due_this_month') {\n  const bugun = new Date();\n  const buAyBaslangic = new Date(bugun.getFullYear(), bugun.getMonth(), 1);\n  const buAySon = new Date(bugun.getFullYear(), bugun.getMonth() + 1, 0);\n  const buAyVade = receivables\n    .filter(a => {\n      if (a.status === 'Paid') return false;\n      const t = parseDate(a.due_date);\n      return t && t >= buAyBaslangic && t <= buAySon;\n    })\n    .sort((a, b) => {\n      const ta = parseDate(a.due_date), tb = parseDate(b.due_date);\n      return (ta || 0) - (tb || 0);\n    });\n  if (buAyVade.length === 0) {\n    response = '✅ No receivables due this month.';\n  } else {\n    let total = 0;\n    const ayStr = bugun.toLocaleString('en-US', { month: 'long', year: 'numeric' });\n    response = `📅 *${ayStr} Due* (${buAyVade.length} kayıt)\\n\\n`;\n    buAyVade.forEach(a => {\n      const k = clients.find(k => k.phone === a.phone);\n      const remaining = Number(a.remaining_amount) || 0; total += remaining;\n      response += `👤 ${k ? k.full_name : a.phone}\\n`;\n      response += `   ${a.project_name} — ${formatAmount(remaining)}\\n`;\n      response += `   📅 Vade: ${a.due_date}\\n\\n`;\n    });\n    response += `─────────────────\\n💳 *Bu Ay Total: ${formatAmount(total)}*`;\n  }\n} else if (intent === 'overdue') {\n  const overdueList = receivables\n    .filter(a => a.status!=='Paid' && daysDiff(a.due_date)>0)\n    .sort((a,b) => daysDiff(b.due_date)-daysDiff(a.due_date));\n  if (overdueList.length === 0) {\n    response = '✅ No overdue receivables.';\n  } else {\n    let total = 0;\n    response = `🔴 *Overdue* (${overdueList.length} kayıt)\\n\\n`;\n    overdueList.slice(0,15).forEach(a => {\n      const k = clients.find(k => k.phone===a.phone);\n      const remaining = Number(a.remaining_amount)||0; total += remaining;\n      response += `👤 ${k?k.full_name:a.phone}\\n`;\n      response += `   ${a.project_name} — ${formatAmount(remaining)} (${daysDiff(a.due_date)} gün)\\n\\n`;\n    });\n    if (overdueList.length>15) response += `...ve ${overdueList.length-15} more records\\n\\n`;\n    response += `─────────────────\\n💳 *Total Overdue: ${formatAmount(total)}*`;\n  }\n} else if (intent === 'summary') {\n  const odendi = receivables.filter(a => a.status==='Paid').length;\n  const odenmedi = receivables.filter(a => a.status==='Unpaid').length;\n  const kismi = receivables.filter(a => a.status==='Partial').length;\n  const geciken = receivables.filter(a => a.status!=='Paid' && daysDiff(a.due_date)>0).length;\n  const toplamKalan = receivables.reduce((s,a) => s+(Number(a.remaining_amount)||0), 0);\n  response = `📊 *General Summary*\\n\\n`;\n  response += `👥 Total Clients: ${clients.length}\\n`;\n  response += `📋 Total Records: ${receivables.length}\\n\\n`;\n  response += `✅ Paid: ${odendi}\\n🟡 Partial: ${kismi}\\n🔴 Unpaid: ${odenmedi}\\n⚠️ Overdue: ${geciken}\\n\\n`;\n  response += `─────────────────\\n💳 *Total Remaining: ${formatAmount(toplamKalan)}*`;\n} else if (intent === 'help') {\n  response = `How to query:\\n\\n• Type a client name → client debt status\\n• Type a phone number → client debt status\\n• *overdue* → overdue receivables\\n• *summary* → grand total\\n• A001, A002... → search by receivable number`;\n} else {\n  response = 'I cannot help with that. For receivables queries, please type a client name or phone number.';\n}\n\nreturn [{ json: { response } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        -224
+      ],
+      "id": "2d0f3641-b8b8-4c3c-81b9-f4a9a626c375",
+      "name": "Main Process"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { \n    json: { \n      clients: $input.all().map(i => i.json) \n    } \n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        -224
+      ],
+      "id": "e5f50e52-a81c-4b6f-86ca-76946db2af2b",
+      "name": "Collect Clients"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "rapor-branch-cond-001",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "generate_report",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1328,
+        -448
+      ],
+      "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543201",
+      "name": "IF Report Branch"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tip    = $json.tip;\nconst chatId = $('Webhook').first().json.body.payload.from;\nconst company = process.env.COMPANY_NAME || 'Payment Tracking System';\nconst clients   = $('Google Sheets - Get Clients').all().map(i => i.json);\nconst receivables = $('Google Sheets - Get Receivables').all().map(i => i.json);\n\nreturn [{ json: {\n  tip,\n  chatId,\n  clients,\n  receivables,\n  yil: $json.yil || null,\n  ay:  $json.ay  || null,\n  kisi: $json.kisi || null,\n  kisi_alacaklar: $json.kisi_alacaklar || null,\n  company_name: company,\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        -448
+      ],
+      "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543202",
+      "name": "Build Report Chatbot"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_WAHA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session",
+              "value": "default"
+            },
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.summary + '\\n\\n📩 Rapor PDF haz generated and sent via email.' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2448,
+        -448
+      ],
+      "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543203",
+      "name": "WAHA Report Text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendFile",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_WAHA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({session:'default', chatId:$json.chatId, file:{mimetype:'application/pdf', filename:$json.filename, data:$json.base64}, caption:$json.filename}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2448,
+        -448
+      ],
+      "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543204",
+      "name": "WAHA Report PDF",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "content": "## Chatbot\nIncoming WhatsApp → intent detection (Gemini NLU)\n→ query clients/receivables → WAHA text reply\n→ PDF report request → generate PDF → email + WAHA text",
+        "height": 720,
+        "width": 3572,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        -576
+      ],
+      "id": "sticky-001",
+      "name": "Note: Chatbot"
+    },
+    {
+      "parameters": {
+        "content": "## Auto Report Check (ORK)\nDaily 09:00 — check Report_Log → find missing\nmonthly/yearly PDFs → generate → Gmail\n→ save to Report_Log\nAlso sends any reports missed during downtime on startup.",
+        "height": 456,
+        "width": 2888,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        208
+      ],
+      "id": "sticky-003",
+      "name": "Note: Auto Report"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -224,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567801",
+      "name": "Report Check Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_ID",
+          "mode": "list",
+          "cachedResultName": "mock_data_final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_RAPOR_LOG_GID",
+          "mode": "list",
+          "cachedResultName": "Report_Log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_RAPOR_LOG_GID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567802",
+      "name": "Get Report Log",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_ID",
+          "mode": "list",
+          "cachedResultName": "mock_data_final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_KISILER_GID",
+          "mode": "list",
+          "cachedResultName": "Kisiler",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_KISILER_GID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567803",
+      "name": "Get Clients",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_ID",
+          "mode": "list",
+          "cachedResultName": "mock_data_final",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_ALACAKLAR_GID",
+          "mode": "list",
+          "cachedResultName": "Alacaklar",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_ALACAKLAR_GID"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        448,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567804",
+      "name": "Get Receivables",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Read sent reports\nconst logData = $('Collect Logs').first().json.logRows || [];\nconst sent = new Set(logData.map(r => `${r.report_type}_${r.period}`));\n\nconst baslangic = '2025-11';\nconst [basYil, basAy] = baslangic.split('-').map(Number);\n\nconst bugun = new Date();\nconst sonYil = bugun.getFullYear();\nconst sonAy  = bugun.getMonth() + 1;\n\nconst missing = [];\n\nlet y = basYil, m = basAy;\nwhile (y < sonYil || (y === sonYil && m < sonAy)) {\n  const period = `${y}-${String(m).padStart(2, '0')}`;\n  if (!sent.has(`aylik_${donem}`)) missing.push({ tip: 'monthly', yil: y, ay: m, donem });\n  m++; if (m > 12) { m = 1; y++; }\n}\n\nfor (let yil = basYil; yil < sonYil; yil++) {\n  const period = String(yil);\n  if (!sent.has(`yillik_${donem}`)) missing.push({ tip: 'yearly', yil, ay: null, donem });\n}\n\nif (missing.length === 0) return [];\nreturn missing.map(e => ({ json: e }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567805",
+      "name": "Calculate Missing"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare metadata for all missing reports (runOnceForAllItems)\nconst chatId = 'YOUR_WHATSAPP_CHAT_ID';\nreturn $input.all().map(item => {\n  const { tip, yil, ay, donem } = item.json;\n  return { json: { tip, yil: yil || null, ay: ay || null, period, chatId } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567806",
+      "name": "Build Report"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_WAHA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session",
+              "value": "default"
+            },
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.summary + '\\n\\n📎 PDF rapor e-posta adresinize g sent.' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1328,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567807",
+      "name": "WAHA Send Text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendFile",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_WAHA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({session:'default', chatId:$json.chatId, file:{mimetype:'application/pdf', filename:$json.filename, data:$json.base64}, caption:$json.filename}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1776,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567808",
+      "name": "WAHA Send PDF"
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-gmail@gmail.com",
+        "toEmail": "your-recipient@gmail.com",
+        "subject": "={{ `Payment Tracking — ${$json.tip === 'monthly' ? 'Monthly' : 'Yearly'} Report (${$json.period})` }}",
+        "html": "={{ `<p>Hello,</p><p>generated by Payment Tracking payment tracking system <strong>${$json.tip === 'monthly' ? 'Monthly' : 'Yearly'} Report (${$json.period})</strong> is sent as a PDF attachment.</p><hr><pre style=\"background:#f5f5f5;padding:12px;border-radius:4px;font-size:13px\">${$json.summary}</pre><p style=\"color:#888;font-size:12px\">Report Date: ${new Date().toLocaleDateString('tr-TR')}<br>Payment Tracking Payment Tracking System</p>` }}",
+        "options": {
+          "attachments": "pdf"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1968,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567809",
+      "name": "Send Gmail",
+      "webhookId": "YOUR_WEBHOOK_UUID_2",
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEETS_ID/values/Rapor_Log:append",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "RAW"
+            },
+            {
+              "name": "insertDataOption",
+              "value": "INSERT_ROWS"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ values: [[ $('Merge Reports').item.json.tip, $('Merge Reports').item.json.period, new Date().toLocaleString('tr-TR', {timeZone:'Europe/Istanbul'}), 'sent' ]] }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2224,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567810",
+      "name": "Save Report Log",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all().map(i => i.json).filter(r => r.report_type);\nreturn [{ json: { logRows: rows } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        336
+      ],
+      "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567815",
+      "name": "Collect Logs"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "99999999-aaaa-bbbb-cccc-000000000001",
+        "options": {}
+      },
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "ORK Test Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -192,
+        496
+      ],
+      "webhookId": "99999999-aaaa-bbbb-cccc-000000000001"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://rapor-api:5050/rapor/{{ $json.tip }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ clients: $('Get Clients').all().map(i => i.json), receivables: $('Get Receivables').all().map(i => i.json), company_name: 'Sayf Yap\\u0131', yil: $json.yil, ay: $json.ay }) }}",
+        "options": {
+          "response": {
+            "response": {}
+          }
+        }
+      },
+      "id": "c5d6e7f8-a9b0-1234-5678-901234567890",
+      "name": "Call Report API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1008,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge report-api HTTP responses with Build Report metadata\nconst apiItems     = $input.all();       // Call Report API outputs (base64, filename, summary)\nconst olusturItems = $('Build Report').all();  // Build Report outputs (chatId, tip, period)\n\nreturn apiItems.map((apiItem, i) => {\n  const rapor    = apiItem.json;\n  const base64   = rapor.base64   || (rapor.rapor && rapor.rapor.base64)   || '';\n  const filename = rapor.filename || (rapor.rapor && rapor.rapor.filename) || '';\n  const summary     = rapor.summary     || (rapor.rapor && rapor.rapor.summary)     || '';\n\n  const meta   = olusturItems[i] ? olusturItems[i].json : {};\n  const chatId = meta.chatId || 'YOUR_WHATSAPP_CHAT_ID';\n  const tip    = meta.tip    || '';\n  const period  = meta.period  || '';\n\n  return { json: { chatId, tip, period, base64, filename, summary } };\n});"
+      },
+      "id": "d6e7f8a9-b0c1-2345-6789-012345678901",
+      "name": "Merge Reports",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// After WAHA output - get base64 from Merge Reports and convert to binary\nconst wahaItems = $input.all();\nconst raporItems = $('Merge Reports').all();\n\nreturn wahaItems.map((_, i) => {\n  const rapor = raporItems[i] ? raporItems[i].json : {};\n  const base64 = rapor.base64 || '';\n  const filename = rapor.filename || 'rapor.pdf';\n  return {\n    json: {\n      tip: rapor.tip || '',\n      period: rapor.period || '',\n      summary: rapor.summary || '',\n      filename: filename\n    },\n    binary: {\n      pdf: {\n        data: base64,\n        mimeType: 'application/pdf',\n        fileName: filename,\n        fileExtension: 'pdf'\n      }\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        336
+      ],
+      "id": "e7f8a9b0-c1d2-3456-7890-123456789012",
+      "name": "Prepare PDF Binary"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://rapor-api:5050/rapor/{{ $json.tip }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.tip === \"kisi\" ? {kisi: $json.kisi, receivables: $json.kisi_receivables} : $json.tip === \"haftalik\" ? {clients: $json.clients, receivables: $json.receivables, company_name: $json.company_name} : $json.tip === \"yillik\" ? {clients: $json.clients, receivables: $json.receivables, yil: $json.yil, company_name: $json.company_name} : {clients: $json.clients, receivables: $json.receivables, yil: $json.yil, ay: $json.ay, company_name: $json.company_name}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1776,
+        -448
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000001",
+      "name": "Call Report API Chatbot"
+    },
+    {
+      "parameters": {
+        "jsCode": "const chatId = $('Build Report Chatbot').first().json.chatId;\nconst tip    = $('Build Report Chatbot').first().json.tip;\nreturn [{ json: {\n  base64:   $json.base64,\n  filename: $json.filename,\n  summary:     $json.summary,\n  chatId,\n  tip,\n  pdf:      $json.base64,\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2224,
+        -448
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000002",
+      "name": "Prepare Report Reply Chatbot"
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-gmail@gmail.com",
+        "toEmail": "your-recipient@gmail.com",
+        "subject": "={{ \"Payment Tracking — \" + ($json.tip === 'weekly' ? 'Weekly' : $json.tip === 'monthly' ? 'Monthly' : $json.tip === 'yearly' ? 'Yearly' : $json.tip === 'general' ? 'General Receivables' : 'Client') + \" Report\" }}",
+        "html": "={{ `<p>Hello,</p><p>The requested <strong>${($json.tip === 'weekly' ? 'Weekly' : $json.tip === 'monthly' ? 'Monthly' : $json.tip === 'yearly' ? 'Yearly' : $json.tip === 'general' ? 'General Receivables' : 'Client')} Report</strong> is sent as a PDF attachment.</p><hr><pre style=\"background:#f5f5f5;padding:12px;border-radius:4px;font-size:13px\">${$json.summary}</pre><p style=\"color:#888;font-size:12px\">Report Date: ${new Date().toLocaleDateString('tr-TR')}<br>Payment Tracking Payment Tracking System</p>` }}",
+        "options": {
+          "attachments": "pdf"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2896,
+        -448
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000003",
+      "name": "Send Gmail Chatbot",
+      "webhookId": "YOUR_WEBHOOK_UUID_3",
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Gmail SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// After WAHA output - get base64 from Prepare Report Reply Chatbot and convert to binary\nconst wahaItems = $input.all();\nconst raporItems = $('Prepare Report Reply Chatbot').all();\n\nreturn wahaItems.map((_, i) => {\n  const rapor = raporItems[i] ? raporItems[i].json : {};\n  const base64 = rapor.base64 || rapor.pdf || '';\n  const filename = rapor.filename || 'rapor.pdf';\n  const chatId = rapor.chatId || '';\n  return {\n    json: { tip: rapor.tip || '', summary: rapor.summary || '', filename, chatId, base64 },\n    binary: {\n      pdf: {\n        data: base64,\n        mimeType: 'application/pdf',\n        fileName: filename,\n        fileExtension: 'pdf'\n      }\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2672,
+        -448
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000004",
+      "name": "Prepare PDF Binary Chatbot"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "no-pdf-check",
+              "leftValue": "={{ $json.no_pdf }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        -448
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000005",
+      "name": "IF No PDF"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_WAHA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session",
+              "value": "default"
+            },
+            {
+              "name": "chatId",
+              "value": "={{ $('Build Report Chatbot').first().json.chatId }}"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.summary }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2000,
+        -304
+      ],
+      "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000006",
+      "name": "WAHA No PDF Message"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Gemini response\nconst raw = $json.candidates?.[0]?.content?.parts?.[0]?.text || '';\n\nif (raw && raw.trim()) {\n  let parsed;\n  try { parsed = JSON.parse(raw); } catch(e) { parsed = { intent: 'out_of_scope' }; }\n  const result = {\n    intent:    parsed.intent    || 'out_of_scope',\n    name:      parsed.name      || null,\n    phone:     parsed.phone      || null,\n    receivable_no: parsed.receivable_no || null,\n    client_id:   parsed.client_id   || null,\n    report_year: parsed.report_year || null,\n    report_month:  parsed.report_month  || null,\n  };\n  return [{ json: { text: JSON.stringify(result) } }];\n}\n\n// Gemini failed - keyword fallback\nconst original = $('Webhook').item.json.body?.payload?.body || '';\nconst message = original.toLowerCase()\n  .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')\n  .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');\n\nlet intent = 'out_of_scope';\nlet clientName = null, reportYear = null, reportMonth = null, phoneNum = null, receivableNo = null;\n\nfunction extractName(text) {\n  const temizle = ['borcu','borcunu','borclu','ne','kadar','nedir','alacagi','alacak',\n    'odedi','mi','odeme','durumu','remaining','tutar','var','nasil','olan','raporu','sorgu'];\n  const orig = original.split(/\\s+/).filter(k => {\n    const kl = k.toLowerCase().replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');\n    return !temizle.includes(kl) && k.length > 1;\n  });\n  return orig.length > 0 ? orig.join(' ') : null;\n}\n\n// 1. Receivable number (A001 format)\nconst alacakMatch = message.match(/\\ba\\d{3}\\b/);\nif (alacakMatch) {\n  intent = 'receivable_query';\n  receivableNo = alacakMatch[0].toUpperCase();\n}\n// 2. Phone\nelse if (/\\b0?5[0-9]{9}\\b/.test(message.replace(/[\\s\\-]/g,''))) {\n  intent = 'phone_query';\n  const m = message.replace(/[\\s\\-]/g,'').match(/0?5[0-9]{9}/);\n  if (m) phoneNum = m[0];\n}\n// 3. Client query - question for a SPECIFIC person (how much, debt - person-focused)\n// \"how much debt\", \"Ahmet borcu nedir\", \"Mehmet Demir ne kadar\"\nelse if (/borcu\\b|borcunu\\b|ne kadar.*borclu|ne kadar.*alacak|odedi mi|odeme durumu/.test(message)) {\n  intent = 'client_query';\n  isim = extractName(message);\n}\n// 4. Yearly report - \"rapor\" keyword not required; year+summary/status or yearly is enough\nelse if (/yillik/.test(message) || (/\\b(20\\d{2})\\b/.test(message) && /summary|durum|nasil|bakis|gitti|rapor/.test(message))) {\n  intent = 'yearly_report';\n  const m = message.match(/\\b(20\\d{2})\\b/);\n  if (m) reportYear = parseInt(m[1]);\n}\nelse if (/rapor/.test(message) && /yillik|yil rapor|yili rapor/.test(message)) {\n  intent = 'yearly_report';\n  const m = message.match(/\\b(20\\d{2})\\b/);\n  if (m) reportYear = parseInt(m[1]);\n}\n// 5. General report\nelse if (/rapor/.test(message) && /genel|tum donem/.test(message)) {\n  intent = 'general_report';\n}\n// 6. Weekly report\nelse if (/rapor/.test(message) && /haftalik|bu hafta/.test(message)) {\n  intent = 'weekly_report';\n}\n// 7. Monthly report\nelse if (/rapor/.test(message)) {\n  const aylar = {ocak:1,subat:2,mart:3,nisan:4,mayis:5,haziran:6,temmuz:7,agustos:8,eylul:9,ekim:10,kasim:11,aralik:12};\n  let ayBulundu = null;\n  for (const [ad, no] of Object.entries(aylar)) {\n    if (message.includes(ad)) { ayBulundu = no; break; }\n  }\n  if (ayBulundu) {\n    intent = 'monthly_report'; reportMonth = ayBulundu;\n    const m = message.match(/\\b(20\\d{2})\\b/);\n    if (m) reportYear = parseInt(m[1]);\n  } else {\n    const yilM = message.match(/\\b(20\\d{2})\\b/);\n    if (yilM) { intent = 'yearly_report'; reportYear = parseInt(yilM[1]); }\n    else { intent = 'weekly_report'; }\n  }\n}\n// 8. Due this month\nelse if (/bu ay.*vade|bu ay.*odeme|bu ayki|bu ay kim/.test(message)) {\n  intent = 'due_this_month';\n}\n// 9. Overdue - \"who is in debt\", \"late\", \"did not pay\"\nelse if (/vade.*daysLate|gecik|odeme.*yapmad|kimler.*borclu|borclu.*kimler/.test(message)) {\n  intent = 'overdue';\n}\n// 10. Summary\nelse if (/summary|genel durum|toplam|kac alacak|butun kayit|genel bakis|kac kisi/.test(message)) {\n  intent = 'summary';\n}\n// 11. Help\nelse if (/yardim|ne yapabilir|merhaba|selam|komut|nasil kullan/.test(message)) {\n  intent = 'help';\n}\n\nconst result = { intent, clientName, phoneNum, receivable_no: receivableNo, client_id: null, report_year: reportYear, report_month: reportMonth };\nreturn [{ json: { text: JSON.stringify(result) } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        640,
+        -224
+      ],
+      "id": "bfa461e2-3c84-4701-b7be-1f78df144300",
+      "name": "Intent Parse"
+    },
+    {
+      "parameters": {
+        "jsCode": "const message = $('Webhook').item.json.body?.payload?.body || '';\n\nconst systemPrompt = `You are the NLU engine of a contractor receivables tracking system. Analyze the user's WhatsApp message and respond ONLY in the following JSON format, nothing else:\n\n{\"intent\":\"...\",\"name\":null,\"phone\":null,\"receivable_no\":null,\"client_id\":null,\"report_year\":null,\"report_month\":null}\n\n=== QUERY INTENTS (returns text response, no PDF) ===\n- client_query: Search by client name or company. Examples: \"Ahmet Yılmaz borcu nedir\", \"Mehmet Demir ne kadar borçlu\", \"ABC İnşaat borcu\"\n- contact_query: Query email or contact info. Examples: \"Ahmet Yılmaz'ın maili nedir\"\n- phone_query: Search by phone number. Examples: \"0532... numaralı kişi\"\n- receivable_query: Search by receivable number (A001 format). Examples: \"A023 alacağı\", \"A001 nedir\"\n- overdue: Past-due payments. Examples: \"vadesi geçenler kimler\", \"geciken ödemeler\", \"kim ödeme yapmadı\", \"kimler borçlu\"\n- due_this_month: Payments due this month. Examples: \"bu ay vadesi dolan kimler\", \"bu ay kim ödeme yapacak\", \"bu ayki vadeler\"\n- summary: General stats and overview (no year). Examples: \"özet\", \"genel durum\", \"kaç alacak var\", \"toplam ne kadar\", \"bütün kayıtları göster\", \"genel bakış\"\n- help: System help. Examples: \"yardım\", \"ne yapabilirsin\", \"merhaba\", \"nasıl kullanılır\"\n- out_of_scope: Unrelated questions. Examples: \"hava nasıl\", \"ne zaman gelecek\"\n\n=== REPORT INTENTS (generates PDF and sends via email) ===\nEven if the user does not say 'report/pdf/create/send', choose a report intent if that is clearly the intent.\n- weekly_report: Weekly PDF report request. Examples: \"haftalık rapor gönder\", \"bu haftanın raporunu oluştur\", \"haftalık durum\"\n- monthly_report: Monthly PDF report. Fill report_month (1-12) and report_year. Examples: \"ocak raporu\", \"şubat aylık raporu\", \"mart 2025 raporu\", \"ocak ayı durumu\"\n- yearly_report: Yearly PDF report. Fill report_year. Examples: \"2025 yılı rapor gönder\", \"yıllık raporu oluştur\", \"2024 raporu\", \"2026 yılı özet\", \"2026 yılı durumu\", \"yıllık durum\", \"2025 nasıl gitti\", \"yıl özeti\"\n- general_report: All-time PDF report. Examples: \"genel rapor gönder\", \"tüm dönem raporu oluştur\"\n- client_report: PDF report for a specific client. Fill name or client_id. Examples: \"Ahmet Yılmaz raporu gönder\", \"K005 raporu oluştur\"\n\n=== CRITICAL RULES ===\n1. Specific year (2024, 2025, 2026...) + summary/status/report/how → yearly_report, fill report_year\n2. \"show all records\", \"overview\", \"how much receivable\" (no year) → summary\n3. \"bu ay vadesi dolan\", \"bu ay kimlerin ödemeleri yaklaşıyor\" → due_this_month\n4. Emin olamadığında out_of_scope — choose the closest intent instead\n5. \"özet\" kelimesi tek başına gelirse → summary; yıl ile gelirse (\"2026 yılı özet\") → yearly_report`;\n\nreturn [{\n  json: {\n    contents: [{ role: \"user\", parts: [{ text: message }] }],\n    systemInstruction: { parts: [{ text: systemPrompt }] },\n    generationConfig: { responseMimeType: \"application/json\", temperature: 0.1 }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        -224
+      ],
+      "id": "c6985cc7-e6d4-4cdf-9755-4ce302a7f060",
+      "name": "Prepare Gemini Request"
+    },
+    {
+      "parameters": {
+        "content": "## Daily Reminder System\nRuns daily at 11:00.\nSends overdue/upcoming receivables to contractor via WhatsApp.\nSchedule: Day 0, +1, +3, +5, then every 5 days.\nMax 30 records shown.",
+        "height": 512,
+        "width": 1480,
+        "color": 3
+      },
+      "id": "sticky-hatirlatma",
+      "name": "Note: Reminders",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -304,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 11-22 * * *"
+            }
+          ]
+        }
+      },
+      "id": "hat-trigger-01",
+      "name": "Reminder Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -224,
+        880
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hat-test-001",
+        "options": {}
+      },
+      "id": "hat-webhook-01",
+      "name": "Reminder Test Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        1072
+      ],
+      "webhookId": "hat-test-001"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_KISILER_GID",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "hat-kisiler-01",
+      "name": "Get Reminder Clients",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        16,
+        976
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const clients = $input.all().map(i => i.json);\nreturn [{ json: { clients } }];"
+      },
+      "id": "hat-kisiler-topla-01",
+      "name": "Collect Reminder Clients",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEETS_ID",
+          "mode": "list"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "YOUR_ALACAKLAR_GID",
+          "mode": "list"
+        },
+        "options": {}
+      },
+      "id": "hat-alacaklar-01",
+      "name": "Get Reminder Receivables",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        464,
+        976
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const clientsRaw = $('Collect Reminder Clients').first().json.clients;\nconst receivablesRaw = $input.all().map(i => i.json);\n\nconst receivables = receivablesRaw.map(a => {\n  const odenen = parseFloat(String(a.paid_amount || 0).replace(',', '.')) || 0;\n  const toplam = parseFloat(String(a.total_amount || 0).replace(',', '.')) || 0;\n  return {\n    ...a,\n    status: odenen >= toplam ? 'Paid' : (odenen <= 0 ? 'Unpaid' : 'Partial'),\n    remaining_amount: Math.max(0, toplam - odenen),\n  };\n});\n\nconst clientsMap = {};\nfor (const k of clientsRaw) clientsMap[k.client_id] = k;\n\nconst bugun = new Date();\nbugun.setHours(0, 0, 0, 0);\n\nfunction parseDate(s) {\n  if (!s || s === '-') return null;\n  s = String(s).trim();\n  const p = s.split('.');\n  if (p.length === 3 && p[0].length <= 2) {\n    const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));\n    return isNaN(d.getTime()) ? null : d;\n  }\n  if (s.includes('-')) {\n    const d = new Date(s.slice(0, 10));\n    return isNaN(d.getTime()) ? null : d;\n  }\n  return null;\n}\n\nfunction daysDiff(vade) {\n  if (!vade) return null;\n  return Math.floor((bugun.getTime() - vade.getTime()) / 86400000);\n}\n\nfunction reminderDue(daysLate) {\n  if (daysLate < 0) return false;\n  return daysLate === 0 || daysLate === 1 || daysLate === 3 || (daysLate >= 5 && daysLate % 5 === 0);\n}\n\nfunction formatAmount(n) {\n  return Math.round(n).toLocaleString('en-US') + ' TL';\n}\n\nconst records = [];\n\nfor (const a of receivables) {\n  if (a.status === 'Paid') continue;\n  const vade = parseDate(a.due_date);\n  if (!vade) continue;\n  const daysLate = daysDiff(vade);\n  if (!reminderDue(daysLate)) continue;\n  const kisi = clientsMap[a.client_id];\n  if (!kisi || kisi.active === 'No') continue;\n\n  records.push({ kisi, alacak: a, daysLate, remaining: a.remaining_amount });\n}\n\nif (records.length === 0) return [];\n\nrecords.sort((a, b) => b.daysLate - a.daysLate);\n\nconst MAX_KAYIT = 30;\nconst displayed = records.slice(0, MAX_KAYIT);\nconst remainingCount = records.length - displayed.length;\n\nconst dateStr = bugun.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });\nlet message = `🔔 *Daily Payment Tracking — ${dateStr}*\\n`;\nmessage += `📋 ${records.length} records pending reminder\\n\\n`;\n\nfor (const { kisi, alacak, daysLate, remaining } of displayed) {\n  const overdueLabel = daysLate === 0 ? '⚠️ Due today' : `🔴 ${daysLate} days overdue`;\n  message += `👤 *${kisi.full_name}*\\n`;\n  message += `   ${alacak.project_name} — ${formatAmount(remaining)}\\n`;\n  message += `   ${overdueLabel}\\n`;\n  if (kisi.phone) message += `   📞 ${kisi.phone}\\n`;\n  message += '\\n';\n}\n\nif (remainingCount > 0) message += `...ve ${remainingCount} more records\\n\\n`;\n\nconst toplam = records.reduce((s, r) => s + r.remaining, 0);\nmessage += `─────────────────\\n💳 *Total: ${formatAmount(total)}*`;\n\nreturn [{ json: { message } }];"
+      },
+      "id": "hat-hesapla-01",
+      "name": "Calculate Reminders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        688,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://waha:3000/api/sendText",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Api-Key",
+              "value": "YOUR_WAHA_API_KEY"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "session",
+              "value": "default"
+            },
+            {
+              "name": "chatId",
+              "value": "YOUR_CONTRACTOR_NUMBER@c.us"
+            },
+            {
+              "name": "text",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "hat-waha-01",
+      "name": "Send Reminder WAHA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        896,
+        976
+      ]
+    },
+    {
+      "id": "hat-log-oku-01",
+      "name": "Read Reminder Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        1280
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      },
+      "parameters": {
+        "method": "GET",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEETS_ID/values/Rapor_Log",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "options": {}
+      }
+    },
+    {
+      "id": "hat-gonderildi-mi-01",
+      "name": "Check Reminder Sent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        1280
+      ],
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\nconst values = response.values || [];\n\n// Today's date (Istanbul)\nconst now = new Date();\nconst istanbul = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));\nconst today = `${String(istanbul.getDate()).padStart(2,'0')}.${String(istanbul.getMonth()+1).padStart(2,'0')}.${istanbul.getFullYear()}`;\n\n// First row is header, rest is data\nif (values.length < 2) {\n  return [{ json: { send: true } }];\n}\n\nconst headers = values[0];\nconst tipIdx = headers.indexOf('rapor_tipi');\nconst tarihIdx = headers.indexOf('tarih');\n\nconst bugunGonderildi = values.slice(1).some(row => {\n  const tip = tipIdx >= 0 ? (row[tipIdx] || '') : (row[0] || '');\n  const tarih = tarihIdx >= 0 ? (row[tarihIdx] || '') : (row[2] || '');\n  return String(tip).trim() === 'hatirlatma' && String(tarih).startsWith(today);\n});\n\nif (bugunGonderildi) {\n  return []; // Already sent today\n}\n\nreturn [{ json: { send: true } }];"
+      }
+    },
+    {
+      "id": "hat-log-kaydet-01",
+      "name": "Save Reminder Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        976
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      },
+      "parameters": {
+        "method": "POST",
+        "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEETS_ID/values/Rapor_Log:append",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleSheetsOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "valueInputOption",
+              "value": "RAW"
+            },
+            {
+              "name": "insertDataOption",
+              "value": "INSERT_ROWS"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ values: [[ 'reminder', new Date().toLocaleDateString('tr-TR', {timeZone:'Europe/Istanbul'}), new Date().toLocaleString('tr-TR', {timeZone:'Europe/Istanbul'}), 'sent' ]] }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Prepare Gemini Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Gemini NLU": {
+      "main": [
+        [
+          {
+            "node": "Intent Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Get Clients": {
+      "main": [
+        [
+          {
+            "node": "Collect Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Get Receivables": {
+      "main": [
+        [
+          {
+            "node": "Main Process",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Process": {
+      "main": [
+        [
+          {
+            "node": "IF Report Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Report Branch": {
+      "main": [
+        [
+          {
+            "node": "Build Report Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report Chatbot": {
+      "main": [
+        [
+          {
+            "node": "Call Report API Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA Report Text": {
+      "main": [
+        [
+          {
+            "node": "Prepare PDF Binary Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Clients": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Get Receivables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Report Check Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Report Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Report Log": {
+      "main": [
+        [
+          {
+            "node": "Collect Logs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Clients": {
+      "main": [
+        [
+          {
+            "node": "Get Receivables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Receivables": {
+      "main": [
+        [
+          {
+            "node": "Calculate Missing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Missing": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report": {
+      "main": [
+        [
+          {
+            "node": "Call Report API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA Send Text": {
+      "main": [
+        [
+          {
+            "node": "Prepare PDF Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA Send PDF": {
+      "main": [
+        [
+          {
+            "node": "Send Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Gmail": {
+      "main": [
+        [
+          {
+            "node": "Save Report Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Logs": {
+      "main": [
+        [
+          {
+            "node": "Get Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ORK Test Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Report Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Report API": {
+      "main": [
+        [
+          {
+            "node": "Merge Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Reports": {
+      "main": [
+        [
+          {
+            "node": "WAHA Send Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare PDF Binary": {
+      "main": [
+        [
+          {
+            "node": "WAHA Send PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Report API Chatbot": {
+      "main": [
+        [
+          {
+            "node": "IF No PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Report Reply Chatbot": {
+      "main": [
+        [
+          {
+            "node": "WAHA Report Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare PDF Binary Chatbot": {
+      "main": [
+        [
+          {
+            "node": "WAHA Report PDF",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Gmail Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF No PDF": {
+      "main": [
+        [
+          {
+            "node": "WAHA No PDF Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Report Reply Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Parse": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Get Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Gemini Request": {
+      "main": [
+        [
+          {
+            "node": "Gemini NLU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Reminder Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reminder Test Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get Reminder Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Reminder Clients": {
+      "main": [
+        [
+          {
+            "node": "Collect Reminder Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Reminder Clients": {
+      "main": [
+        [
+          {
+            "node": "Get Reminder Receivables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Reminder Receivables": {
+      "main": [
+        [
+          {
+            "node": "Calculate Reminders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Reminders": {
+      "main": [
+        [
+          {
+            "node": "Send Reminder WAHA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WAHA Report PDF": {
+      "main": [
+        []
+      ]
+    },
+    "Read Reminder Log": {
+      "main": [
+        [
+          {
+            "node": "Check Reminder Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Reminder Sent": {
+      "main": [
+        [
+          {
+            "node": "Get Reminder Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reminder WAHA": {
+      "main": [
+        [
+          {
+            "node": "Save Reminder Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "accept": "application/json, text/plain, */*",
+            "content-type": "application/json",
+            "user-agent": "WAHA/2026.1.5",
+            "x-webhook-request-id": "YOUR_WEBHOOK_REQUEST_ID",
+            "x-webhook-timestamp": "1700000000000",
+            "content-length": "3285",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "host": "host.docker.internal:5678",
+            "connection": "keep-alive"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "id": "evt_01kka3ttwbq6n13h99m5exewke",
+            "timestamp": 1700000000000,
+            "event": "message",
+            "session": "default",
+            "me": {
+              "id": "YOUR_BOT_NUMBER@c.us",
+              "pushName": "Q"
+            },
+            "payload": {
+              "id": "false_YOUR_CONTRACTOR_NUMBER@c.us_YOUR_MESSAGE_ID",
+              "timestamp": 1700000000,
+              "from": "YOUR_CONTRACTOR_NUMBER@c.us",
+              "fromMe": false,
+              "source": "app",
+              "to": "YOUR_BOT_NUMBER@c.us",
+              "body": "Genel rapor",
+              "hasMedia": false,
+              "media": null,
+              "ack": 1,
+              "ackName": "SERVER",
+              "location": null,
+              "vCards": [],
+              "_data": {
+                "id": {
+                  "fromMe": false,
+                  "remote": "YOUR_CONTRACTOR_NUMBER@c.us",
+                  "id": "YOUR_MESSAGE_ID",
+                  "_serialized": "false_YOUR_CONTRACTOR_NUMBER@c.us_YOUR_MESSAGE_ID"
+                },
+                "viewed": false,
+                "body": "Genel rapor",
+                "type": "chat",
+                "t": 1700000000,
+                "clientReceivedTsMillis": 1700000000883,
+                "notifyName": "Mustafa",
+                "from": "YOUR_CONTRACTOR_NUMBER@c.us",
+                "to": "YOUR_BOT_NUMBER@c.us",
+                "ack": 1,
+                "invis": false,
+                "isNewMsg": true,
+                "star": false,
+                "kicNotified": false,
+                "recvFresh": true,
+                "isFromTemplate": false,
+                "isAdsMedia": false,
+                "pollInvalidated": false,
+                "isSentCagPollCreation": false,
+                "latestEditMsgKey": null,
+                "latestEditSenderTimestampMs": null,
+                "mentionedJidList": [],
+                "groupMentions": [],
+                "isEventCanceled": false,
+                "eventInvalidated": false,
+                "isVcardOverMmsDocument": false,
+                "isForwarded": false,
+                "isQuestion": false,
+                "questionReplyQuotedMessage": null,
+                "questionResponsesCount": 0,
+                "readQuestionResponsesCount": 0,
+                "forwardsCount": 0,
+                "hasReaction": false,
+                "newsletterAdminProfile": null,
+                "viewMode": "VISIBLE",
+                "messageSecret": {
+                  "0": 84,
+                  "1": 51,
+                  "2": 102,
+                  "3": 144,
+                  "4": 129,
+                  "5": 64,
+                  "6": 66,
+                  "7": 168,
+                  "8": 216,
+                  "9": 213,
+                  "10": 144,
+                  "11": 249,
+                  "12": 85,
+                  "13": 204,
+                  "14": 182,
+                  "15": 148,
+                  "16": 163,
+                  "17": 218,
+                  "18": 164,
+                  "19": 51,
+                  "20": 166,
+                  "21": 191,
+                  "22": 138,
+                  "23": 65,
+                  "24": 0,
+                  "25": 124,
+                  "26": 76,
+                  "27": 237,
+                  "28": 179,
+                  "29": 250,
+                  "30": 62,
+                  "31": 42
+                },
+                "productHeaderImageRejected": false,
+                "lastPlaybackProgress": 0,
+                "isDynamicReplyButtonsMsg": false,
+                "isCarouselCard": false,
+                "parentMsgId": null,
+                "callSilenceReason": null,
+                "isVideoCall": false,
+                "callDuration": null,
+                "callCreator": null,
+                "callParticipants": null,
+                "isCallLink": null,
+                "callLinkToken": null,
+                "terminatedByDeviceSwitch": null,
+                "selfOtherDeviceConnected": null,
+                "isMdHistoryMsg": false,
+                "stickerSentTs": 0,
+                "isAvatar": false,
+                "lastUpdateFromServerTs": 0,
+                "invokedBotWid": null,
+                "bizBotType": null,
+                "botResponseTargetId": null,
+                "botPluginType": null,
+                "botPluginReferenceIndex": null,
+                "botPluginSearchProvider": null,
+                "botPluginSearchUrl": null,
+                "botPluginSearchQuery": null,
+                "botPluginMaybeParent": false,
+                "botReelPluginThumbnailCdnUrl": null,
+                "botMessageDisclaimerText": null,
+                "botSessionTransparencyType": null,
+                "botMsgBodyType": null,
+                "botModeSelection": null,
+                "reportingTokenInfo": {
+                  "reportingToken": {
+                    "0": 98,
+                    "1": 242,
+                    "2": 242,
+                    "3": 233,
+                    "4": 79,
+                    "5": 48,
+                    "6": 151,
+                    "7": 58,
+                    "8": 210,
+                    "9": 170,
+                    "10": 236,
+                    "11": 57,
+                    "12": 225,
+                    "13": 20,
+                    "14": 6,
+                    "15": 21
+                  },
+                  "version": 2,
+                  "reportingTag": {
+                    "0": 1,
+                    "1": 16,
+                    "2": 205,
+                    "3": 119,
+                    "4": 246,
+                    "5": 207,
+                    "6": 84,
+                    "7": 205,
+                    "8": 46,
+                    "9": 123,
+                    "10": 211,
+                    "11": 194,
+                    "12": 59,
+                    "13": 99,
+                    "14": 170,
+                    "15": 35,
+                    "16": 232,
+                    "17": 39,
+                    "18": 4,
+                    "19": 75
+                  }
+                },
+                "requiresDirectConnection": null,
+                "bizContentPlaceholderType": null,
+                "hostedBizEncStateMismatch": false,
+                "senderOrRecipientAccountTypeHosted": false,
+                "placeholderCreatedWhenAccountIsHosted": false,
+                "groupHistoryBundleMessageKey": null,
+                "groupHistoryBundleMetadata": null,
+                "groupHistoryIndividualMessageInfo": null,
+                "nonJidMentions": null,
+                "links": []
+              }
+            },
+            "engine": "WEBJS",
+            "environment": {
+              "version": "2026.1.5",
+              "engine": "WEBJS",
+              "tier": "CORE",
+              "browser": "/usr/bin/chromium",
+              "platform": "linux/arm64",
+              "worker": {
+                "id": null
+              }
+            }
+          },
+          "webhookUrl": "http://localhost:5678/webhook/YOUR_WEBHOOK_UUID",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionCounter": 624,
+  "triggerCount": 5,
+  "shared": [
+    {
+      "updatedAt": "2026-02-11T16:13:27.543Z",
+      "createdAt": "2026-02-11T16:13:27.543Z",
+      "role": "workflow:owner",
+      "workflowId": "YOUR_WORKFLOW_ID",
+      "projectId": "YOUR_PROJECT_ID",
+      "project": {
+        "updatedAt": "2026-02-05T15:27:16.421Z",
+        "createdAt": "2026-02-04T18:59:33.171Z",
+        "id": "YOUR_PROJECT_ID",
+        "name": "Mustafa p <your-gmail@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "YOUR_USER_ID",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-02-04T18:59:33.171Z",
+            "createdAt": "2026-02-04T18:59:33.171Z",
+            "userId": "YOUR_USER_ID",
+            "projectId": "YOUR_PROJECT_ID",
+            "user": {
+              "updatedAt": "2026-03-19T11:40:37.000Z",
+              "createdAt": "2026-02-04T18:59:33.004Z",
+              "id": "YOUR_USER_ID",
+              "email": "your-gmail@gmail.com",
+              "firstName": "Mustafa",
+              "lastName": "p",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-02-04T19:14:56.145Z",
+                "personalization_survey_n8n_version": "2.4.8"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "YOUR_WORKFLOW_ID",
+                "userActivatedAt": 1770842402823,
+                "easyAIWorkflowOnboarded": true,
+                "npsSurvey": {
+                  "responded": true,
+                  "lastShownAt": 1773087466902
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-03-18",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-18T19:16:36.928Z",
+    "createdAt": "2026-03-18T19:16:36.928Z",
+    "versionId": "855647bd-e091-4349-9ad6-00d255e83e9f",
+    "workflowId": "YOUR_WORKFLOW_ID",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "YOUR_WEBHOOK_UUID",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2.1,
+        "position": [
+          -224,
+          -128
+        ],
+        "id": "c5fa5e3f-dcf2-4ff0-a371-63c29405208a",
+        "name": "Webhook",
+        "webhookId": "YOUR_WEBHOOK_UUID"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "1376130a-5f39-4710-9065-aa7124e282a3",
+                "leftValue": "={{ $json.body.payload.from }}",
+                "rightValue": "YOUR_WHATSAPP_CHAT_ID",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          -16,
+          -128
+        ],
+        "id": "4f216aef-c9c2-40c2-994f-941b18fafbbd",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://waha:3000/api/sendText",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "YOUR_WAHA_API_KEY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "session",
+                "value": "default"
+              },
+              {
+                "name": "chatId",
+                "value": "={{ $('Webhook').first().json.body.payload.from }}"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json.yanit }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1328,
+          -224
+        ],
+        "id": "dfe8dc42-1a1e-4fcb-a52e-3bfac24ce115",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=YOUR_GEMINI_API_KEY",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          416,
+          -224
+        ],
+        "id": "43be69bc-84c1-4a21-84cd-88a5cf16f83d",
+        "name": "Gemini NLU",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEETS_ID",
+            "mode": "list",
+            "cachedResultName": "mock_data_final",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "YOUR_KISILER_GID",
+            "mode": "list",
+            "cachedResultName": "Kisiler",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_KISILER_GID"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          544,
+          -224
+        ],
+        "id": "827bdef2-8f20-4b25-ad57-24da17e3a369",
+        "name": "Google Sheet - Kisiler Getir",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEETS_ID",
+            "mode": "list",
+            "cachedResultName": "mock_data_final",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "YOUR_ALACAKLAR_GID",
+            "mode": "list",
+            "cachedResultName": "Alacaklar",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_ALACAKLAR_GID"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          960,
+          -224
+        ],
+        "id": "56505232-672c-44fd-8960-dc3fe51c519e",
+        "name": "Google Sheet - Alacaklar Getir",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const clients = $('Collect Clients').first().json.clients;\nconst receivables = $input.all().map(i => i.json);\n\nlet intent = 'out_of_scope', clientName = null, phoneNum = null, receivableNo = null;\nlet clientId = null, reportYear = null, raporAy = null;\ntry {\n  const nluOutput = $('Intent Parse').first().json;\n  const raw = nluOutput.text || nluOutput.output || nluOutput.content || JSON.stringify(nluOutput);\n  const match = raw.match(/\\{[\\s\\S]*?\\}/);\n  if (match) {\n    const parsed = JSON.parse(match[0]);\n    intent = parsed.intent    || 'out_of_scope';\n    clientName = parsed.name      || null;\n    phoneNum  = parsed.phone   || null;\n    receivableNo = parsed.receivable_no || null;\n    clientId = parsed.client_id   || null;\n    reportYear = parsed.report_year ? Number(parsed.report_year) : null;\n    reportMonth  = parsed.report_month  ? Number(parsed.report_month)  : null;\n  }\n} catch(e) { intent = 'out_of_scope'; }\n\n// ── Rapor intents ──────────────────────────────────────────────────────────\nif (intent === 'general_report') {\n  return [{ json: { action: 'generate_report', tip: 'general' } }];\n}\nif (intent === 'weekly_report') {\n  return [{ json: { action: 'generate_report', tip: 'weekly' } }];\n}\nif (intent === 'yearly_report') {\n  const bugun = new Date();\n  const yil = raporYil || (bugun.getFullYear() - 1);\n  return [{ json: { action: 'generate_report', tip: 'yearly', yil } }];\n}\nif (intent === 'monthly_report') {\n  const bugun = new Date();\n  const yil = raporYil || (bugun.getMonth() === 0 ? bugun.getFullYear() - 1 : bugun.getFullYear());\n  const ay  = raporAy  || (bugun.getMonth() === 0 ? 12 : bugun.getMonth());\n  return [{ json: { action: 'generate_report', tip: 'monthly', yil, ay } }];\n}\nif (intent === 'client_report') {\n  let k = null;\n  if (clientId) k = kisiler.find(ki => ki.client_id === clientId);\n  else if (isim) k = kisiler.find(ki => ki.full_name && ki.full_name.toLowerCase().includes(clientName.toLowerCase()));\n  if (!k) return [{ json: { response: `\"${clientName || clientId || 'Client'}\" bulunamadı.` } }];\n  const kAls = alacaklar.filter(a => a.client_id === k.client_id || a.phone === k.phone);\n  return [{ json: { action: 'generate_report', tip: 'client', kisi: k, kisi_alacaklar: kAls } }];\n}\n\nfunction formatAmount(n) { return (Number(n)||0).toLocaleString('tr-TR') + ' TL'; }\nfunction statusEmoji(d) { return d==='Paid'?'✅':d==='Partial'?'🟡':d==='Unpaid'?'🔴':'⚪'; }\nfunction parseDate(s) {\n  if (!s) return null;\n  const p = s.split('.');\n  return p.length===3 ? new Date(p[2],p[1]-1,p[0]) : null;\n}\nfunction daysDiff(s) {\n  const t = parseDate(s);\n  return t ? Math.floor((Date.now()-t.getTime())/86400000) : 0;\n}\n\nlet response = '';\n\nif (intent === 'client_query' && isim) {\n  const searchName = clientName.toLowerCase().trim();\n  const found = kisiler.filter(k => k.full_name && k.full_name.toLowerCase().includes(searchName));\n  if (found.length === 0) {\n    response = `\"${isim}\" adında kayıt bulunamadı.\\nLütfen tam adı veya telefon numarasını yazın.`;\n  } else if (found.length > 1) {\n    response = `\"${isim}\" için ${found.length} kişi bulundu:\\n\\n`;\n    found.forEach((k,i) => { response += `${i+1}. ${k.full_name} — ${k.company||'-'}\\n   📞 ${k.phone}\\n\\n`; });\n    response += 'Lütfen telefon numarasıyla tekrar sorgulayın.';\n  } else {\n    const k = bulunanlar[0];\n    const records = alacaklar.filter(a => a.phone === k.phone);\n    response = `👤 *${k.full_name}* — ${k.company||'-'}\\n`;\n    if (k.not) response += `📝 Not: ${k.not}\\n`;\n    response += '\\n';\n    if (records.length === 0) {\n      response += 'Kayıt bulunamadı.';\n    } else {\n      let total = 0;\n      kayitlar.forEach(a => {\n        const remaining = Number(a.remaining_amount)||0; total += kalan;\n        response += `🏗️ ${a.project_name} / ${a.work_description}\\n`;\n        response += `💰 Toplam: ${formatAmount(a.total_amount)} | Kalan: ${formatAmount(kalan)}\\n`;\n        response += `📅 Vade: ${a.due_date||'-'} | ${statusEmoji(a.status)} ${a.status}\\n\\n`;\n      });\n      response += `─────────────────\\n💳 *Toplam Kalan: ${formatAmount(total)}*`;\n    }\n  }\n} else if (intent === 'phone_query' && telefon) {\n  const searchPhone = String(phoneNum).replace(/[\\s\\-\\(\\)]/g,'');\n  const k = kisiler.find(k => k.phone && k.phone.replace(/[\\s\\-\\(\\)]/g,'')===araTel);\n  if (!k) {\n    response = `Bu numarayla kayıt bulunamadı: ${telefon}`;\n  } else {\n    const records = alacaklar.filter(a => a.phone===k.phone);\n    response = `👤 *${k.full_name}* — ${k.company||'-'}\\n\\n`;\n    let total = 0;\n    kayitlar.forEach(a => {\n      const remaining = Number(a.remaining_amount)||0; total += kalan;\n      response += `🏗️ ${a.project_name} / ${a.work_description}\\n`;\n      response += `💰 Kalan: ${formatAmount(kalan)} | ${statusEmoji(a.status)} ${a.status}\\n`;\n      response += `📅 Vade: ${a.due_date||'-'}\\n\\n`;\n    });\n    response += `─────────────────\\n💳 *Toplam Kalan: ${formatAmount(total)}*`;\n  }\n} else if (intent === 'receivable_query' && alacakNo) {\n  const no = String(receivableNo).toUpperCase().trim();\n  const a = alacaklar.find(a => a.receivable_no===no);\n  if (!a) {\n    response = `${no} numaralı alacak kaydı bulunamadı.`;\n  } else {\n    const k = kisiler.find(k => k.phone===a.phone);\n    response = `📋 *Alacak: ${a.receivable_no}*\\n`;\n    response += `👤 ${k?k.full_name:a.phone} — ${k?(k.company||'-'):'-'}\\n\\n`;\n    response += `🏗️ ${a.project_name} / ${a.work_description}\\n`;\n    response += `💰 Toplam: ${formatAmount(a.total_amount)} | Kalan: ${formatAmount(a.remaining_amount)}\\n`;\n    response += `📅 Vade: ${a.due_date||'-'} | ${statusEmoji(a.status)} ${a.status}`;\n    if (a.payment_date) response += ` | Ödeme: ${a.payment_date}`;\n  }\n} else if (intent === 'due_this_month') {\n  const bugun = new Date();\n  const buAyBaslangic = new Date(bugun.getFullYear(), bugun.getMonth(), 1);\n  const buAySon = new Date(bugun.getFullYear(), bugun.getMonth() + 1, 0);\n  const buAyVade = alacaklar\n    .filter(a => {\n      if (a.status === 'Paid') return false;\n      const t = parseDate(a.due_date);\n      return t && t >= buAyBaslangic && t <= buAySon;\n    })\n    .sort((a, b) => {\n      const ta = parseDate(a.due_date), tb = parseDate(b.due_date);\n      return (ta || 0) - (tb || 0);\n    });\n  if (buAyVade.length === 0) {\n    response = '✅ Bu ay vadesi dolan alacak bulunmuyor.';\n  } else {\n    let total = 0;\n    const ayStr = bugun.toLocaleString('tr-TR', { month: 'long', year: 'numeric' });\n    response = `📅 *${ayStr} Vadesi Dolan* (${buAyVade.length} kayıt)\\n\\n`;\n    buAyVade.forEach(a => {\n      const k = kisiler.find(k => k.phone === a.phone);\n      const remaining = Number(a.remaining_amount) || 0; total += kalan;\n      response += `👤 ${k ? k.full_name : a.phone}\\n`;\n      response += `   ${a.project_name} — ${formatAmount(kalan)}\\n`;\n      response += `   📅 Vade: ${a.due_date}\\n\\n`;\n    });\n    response += `─────────────────\\n💳 *Bu Ay Toplam: ${formatAmount(total)}*`;\n  }\n} else if (intent === 'overdue') {\n  const overdueList = alacaklar\n    .filter(a => a.status!=='Paid' && daysDiff(a.due_date)>0)\n    .sort((a,b) => daysDiff(b.due_date)-daysDiff(a.due_date));\n  if (overdueList.length === 0) {\n    response = '✅ Vadesi geçmiş alacak bulunmuyor.';\n  } else {\n    let total = 0;\n    response = `🔴 *Vadesi Geçmiş* (${overdueList.length} kayıt)\\n\\n`;\n    overdueList.slice(0,15).forEach(a => {\n      const k = kisiler.find(k => k.phone===a.phone);\n      const remaining = Number(a.remaining_amount)||0; total += kalan;\n      response += `👤 ${k?k.full_name:a.phone}\\n`;\n      response += `   ${a.project_name} — ${formatAmount(kalan)} (${daysDiff(a.due_date)} gün)\\n\\n`;\n    });\n    if (overdueList.length>15) response += `...ve ${overdueList.length-15} kayıt daha\\n\\n`;\n    response += `─────────────────\\n💳 *Toplam Geciken: ${formatAmount(total)}*`;\n  }\n} else if (intent === 'summary') {\n  const odendi = alacaklar.filter(a => a.status==='Paid').length;\n  const odenmedi = alacaklar.filter(a => a.status==='Unpaid').length;\n  const kismi = alacaklar.filter(a => a.status==='Partial').length;\n  const geciken = alacaklar.filter(a => a.status!=='Paid' && daysDiff(a.due_date)>0).length;\n  const toplamKalan = alacaklar.reduce((s,a) => s+(Number(a.remaining_amount)||0), 0);\n  response = `📊 *Genel Özet*\\n\\n`;\n  response += `👥 Toplam Kişi: ${kisiler.length}\\n`;\n  response += `📋 Toplam Kayıt: ${alacaklar.length}\\n\\n`;\n  response += `✅ Ödendi: ${odendi}\\n🟡 Kısmi: ${kismi}\\n🔴 Ödenmedi: ${odenmedi}\\n⚠️ Vadesi Geçmiş: ${geciken}\\n\\n`;\n  response += `─────────────────\\n💳 *Toplam Kalan: ${formatAmount(toplamKalan)}*`;\n} else if (intent === 'help') {\n  response = `Nasıl sorgu yapabilirsiniz:\\n\\n• Kişi adı yazın → o kişinin borç durumu\\n• Telefon numarası yazın → o kişinin borç durumu\\n• *vadesi geçenler* → geciken alacaklar\\n• *özet* → genel toplam\\n• A001, A002... → alacak numarasıyla sorgulama`;\n} else {\n  response = 'Bu konuda yardımcı olamıyorum. Alacak sorgusu için kişi adı veya telefon numarası yazabilirsiniz.';\n}\n\nreturn [{ json: { response } }];\n"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1168,
+          -224
+        ],
+        "id": "2d0f3641-b8b8-4c3c-81b9-f4a9a626c375",
+        "name": "Ana İslem"
+      },
+      {
+        "parameters": {
+          "jsCode": "return [\n  { \n    json: { \n      clients: $input.all().map(i => i.json) \n    } \n  }\n];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          752,
+          -224
+        ],
+        "id": "e5f50e52-a81c-4b6f-86ca-76946db2af2b",
+        "name": "Kisiler Topla"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 3
+            },
+            "conditions": [
+              {
+                "id": "rapor-branch-cond-001",
+                "leftValue": "={{ $json.action }}",
+                "rightValue": "generate_report",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.3,
+        "position": [
+          1328,
+          -448
+        ],
+        "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543201",
+        "name": "IF Rapor Bransi"
+      },
+      {
+        "parameters": {
+          "jsCode": "const tip    = $json.tip;\nconst chatId = $('Webhook').first().json.body.payload.from;\nconst company = 'Payment Tracking';\nconst kisiler   = $('Google Sheets - Get Clients').all().map(i => i.json);\nconst receivables = $('Google Sheets - Get Receivables').all().map(i => i.json);\n\nreturn [{ json: {\n  tip,\n  chatId,\n  kisiler,\n  alacaklar,\n  yil: $json.yil || null,\n  ay:  $json.ay  || null,\n  kisi: $json.kisi || null,\n  kisi_alacaklar: $json.kisi_alacaklar || null,\n  company_name: company,\n}}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1552,
+          -448
+        ],
+        "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543202",
+        "name": "Rapor Olustur Chatbot"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://waha:3000/api/sendText",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "YOUR_WAHA_API_KEY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "session",
+                "value": "default"
+              },
+              {
+                "name": "chatId",
+                "value": "={{ $json.chatId }}"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json.summary + '\\n\\n📩 Rapor PDF hazırlandı, e-posta ile iletilecek.' }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2448,
+          -448
+        ],
+        "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543203",
+        "name": "WAHA Rapor Metin"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://waha:3000/api/sendFile",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "YOUR_WAHA_API_KEY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({session:'default', chatId:$json.chatId, file:{mimetype:'application/pdf', filename:$json.filename, data:$json.base64}, caption:$json.filename}) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2448,
+          -448
+        ],
+        "id": "f1e2d3c4-b5a6-9870-fedc-ba9876543204",
+        "name": "WAHA Rapor PDF",
+        "onError": "continueRegularOutput"
+      },
+      {
+        "parameters": {
+          "content": "## 💬 WhatsApp Chatbot\nWebhook → LID filtresi → Gemini NLU → kişi/alacak sorgula → WAHA yanıt\n\n**Rapor intents:** haftalik_rapor / aylik_rapor / kisi_raporu → PDF üret → WAHA PDF gönder",
+          "height": 720,
+          "width": 3572,
+          "color": 4
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -304,
+          -576
+        ],
+        "id": "sticky-001",
+        "name": "Not: Chatbot"
+      },
+      {
+        "parameters": {
+          "content": "## 📅 Otomatik Rapor Kontrol\nHer gün 09:00 — Rapor_Log'u kontrol et → eksik aylık/yıllık PDF'leri üret → WhatsApp + Gmail gönder → Rapor_Log'a kaydet\n\n**Catch-up:** Sistem kapalıyken atlanan tüm raporları ilk çalışmada gönderir",
+          "height": 456,
+          "width": 2888,
+          "color": 5
+        },
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -304,
+          208
+        ],
+        "id": "sticky-003",
+        "name": "Not: Otomatik Rapor"
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "triggerAtHour": 9
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.3,
+        "position": [
+          -224,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567801",
+        "name": "Rapor Kontrol Trigger"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEETS_ID",
+            "mode": "list",
+            "cachedResultName": "mock_data_final",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "YOUR_RAPOR_LOG_GID",
+            "mode": "list",
+            "cachedResultName": "Report_Log",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_RAPOR_LOG_GID"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          0,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567802",
+        "name": "Rapor Log Getir",
+        "alwaysOutputData": true,
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEETS_ID",
+            "mode": "list",
+            "cachedResultName": "mock_data_final",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "YOUR_KISILER_GID",
+            "mode": "list",
+            "cachedResultName": "Kisiler",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_KISILER_GID"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          224,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567803",
+        "name": "Kisiler Getir",
+        "executeOnce": true,
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEETS_ID",
+            "mode": "list",
+            "cachedResultName": "mock_data_final",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit?usp=drivesdk"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "YOUR_ALACAKLAR_GID",
+            "mode": "list",
+            "cachedResultName": "Alacaklar",
+            "cachedResultUrl": "https://docs.google.com/spreadsheets/d/YOUR_GOOGLE_SHEETS_ID/edit#gid=YOUR_ALACAKLAR_GID"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.7,
+        "position": [
+          448,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567804",
+        "name": "Alacaklar Getir",
+        "executeOnce": true,
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// Gönderilen raporları oku\nconst logData = $('Collect Logs').first().json.logRows || [];\nconst sent = new Set(logData.map(r => `${r.report_type}_${r.period}`));\n\nconst baslangic = '2025-11';\nconst [basYil, basAy] = baslangic.split('-').map(Number);\n\nconst bugun = new Date();\nconst sonYil = bugun.getFullYear();\nconst sonAy  = bugun.getMonth() + 1;\n\nconst missing = [];\n\nlet y = basYil, m = basAy;\nwhile (y < sonYil || (y === sonYil && m < sonAy)) {\n  const period = `${y}-${String(m).padStart(2, '0')}`;\n  if (!sent.has(`aylik_${donem}`)) missing.push({ tip: 'monthly', yil: y, ay: m, donem });\n  m++; if (m > 12) { m = 1; y++; }\n}\n\nfor (let yil = basYil; yil < sonYil; yil++) {\n  const period = String(yil);\n  if (!sent.has(`yillik_${donem}`)) missing.push({ tip: 'yearly', yil, ay: null, donem });\n}\n\nif (missing.length === 0) return [];\nreturn missing.map(e => ({ json: e }));"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          656,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567805",
+        "name": "Eksik Hesapla"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Tüm eksik raporlar için metadata hazırla (runOnceForAllItems)\nconst chatId = 'YOUR_WHATSAPP_CHAT_ID';\nreturn $input.all().map(item => {\n  const { tip, yil, ay, donem } = item.json;\n  return { json: { tip, yil: yil || null, ay: ay || null, period, chatId } };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          880,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567806",
+        "name": "Rapor Olustur"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://waha:3000/api/sendText",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "YOUR_WAHA_API_KEY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "session",
+                "value": "default"
+              },
+              {
+                "name": "chatId",
+                "value": "={{ $json.chatId }}"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json.summary + '\\n\\n📎 PDF rapor e-posta adresinize gönderildi.' }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1328,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567807",
+        "name": "WAHA Metin Gonder"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://waha:3000/api/sendFile",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "YOUR_WAHA_API_KEY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({session:'default', chatId:$json.chatId, file:{mimetype:'application/pdf', filename:$json.filename, data:$json.base64}, caption:$json.filename}) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1776,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567808",
+        "name": "WAHA PDF Gonder"
+      },
+      {
+        "parameters": {
+          "fromEmail": "your-gmail@gmail.com",
+          "toEmail": "your-recipient@gmail.com",
+          "subject": "={{ `Payment Tracking — ${$json.tip === 'monthly' ? 'Monthly' : 'Yearly'} Report (${$json.period})` }}",
+          "html": "={{ `<p>Hello,</p><p>Payment Tracking ödeme takip sistemi tarafından generated <strong>${$json.tip === 'monthly' ? 'Monthly' : 'Yearly'} Report (${$json.period})</strong> is attached as a PDF.</p><hr><pre style=\"background:#f5f5f5;padding:12px;border-radius:4px;font-size:13px\">${$json.summary}</pre><p style=\"color:#888;font-size:12px\">Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}<br>Payment Tracking Ödeme Takip Sistemi</p>` }}",
+          "options": {
+            "attachments": "pdf"
+          }
+        },
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 2.1,
+        "position": [
+          1968,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567809",
+        "name": "Gmail Gonder",
+        "webhookId": "YOUR_WEBHOOK_UUID_2",
+        "credentials": {
+          "smtp": {
+            "id": "gfWT1yDfNEzb7xI5",
+            "name": "Gmail SMTP"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEETS_ID/values/Rapor_Log:append",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleSheetsOAuth2Api",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "valueInputOption",
+                "value": "RAW"
+              },
+              {
+                "name": "insertDataOption",
+                "value": "INSERT_ROWS"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ values: [[ $('Merge Reports').item.json.tip, $('Merge Reports').item.json.period, new Date().toLocaleString('tr-TR', {timeZone:'Europe/Istanbul'}), 'gonderildi' ]] }) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          2224,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567810",
+        "name": "Rapor Log Kaydet",
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const rows = $input.all().map(i => i.json).filter(r => r.report_type);\nreturn [{ json: { logRows: rows } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          112,
+          336
+        ],
+        "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567815",
+        "name": "Log Topla"
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "99999999-aaaa-bbbb-cccc-000000000001",
+          "options": {}
+        },
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "ORK Test Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -192,
+          496
+        ],
+        "webhookId": "99999999-aaaa-bbbb-cccc-000000000001"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://rapor-api:5050/rapor/{{ $json.tip }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ kisiler: $('Get Clients').all().map(i => i.json), alacaklar: $('Get Receivables').all().map(i => i.json), company_name: 'Sayf Yap\\u0131', yil: $json.yil, ay: $json.ay }) }}",
+          "options": {
+            "response": {
+              "response": {}
+            }
+          }
+        },
+        "id": "c5d6e7f8-a9b0-1234-5678-901234567890",
+        "name": "Rapor API Cagir",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1008,
+          336
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// rapor-api HTTP cevaplarını Rapor Olustur metadata'sıyla birleştir\nconst apiItems     = $input.all();       // Rapor API Cagir çıktıları (base64, filename, ozet)\nconst olusturItems = $('Build Report').all();  // Rapor Olustur çıktıları (chatId, tip, donem)\n\nreturn apiItems.map((apiItem, i) => {\n  const rapor    = apiItem.json;\n  const base64   = rapor.base64   || (rapor.rapor && rapor.rapor.base64)   || '';\n  const filename = rapor.filename || (rapor.rapor && rapor.rapor.filename) || '';\n  const ozet     = rapor.summary     || (rapor.rapor && rapor.rapor.summary)     || '';\n\n  const meta   = olusturItems[i] ? olusturItems[i].json : {};\n  const chatId = meta.chatId || 'YOUR_WHATSAPP_CHAT_ID';\n  const tip    = meta.tip    || '';\n  const period  = meta.period  || '';\n\n  return { json: { chatId, tip, period, base64, filename, ozet } };\n});"
+        },
+        "id": "d6e7f8a9-b0c1-2345-6789-012345678901",
+        "name": "Rapor Birlestir",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1120,
+          336
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "// WAHA çıktısından sonra — Rapor Birlestir'den base64 alıp binary'e çevir\nconst wahaItems = $input.all();\nconst raporItems = $('Merge Reports').all();\n\nreturn wahaItems.map((_, i) => {\n  const rapor = raporItems[i] ? raporItems[i].json : {};\n  const base64 = rapor.base64 || '';\n  const filename = rapor.filename || 'rapor.pdf';\n  return {\n    json: {\n      tip: rapor.tip || '',\n      period: rapor.period || '',\n      ozet: rapor.summary || '',\n      filename: filename\n    },\n    binary: {\n      pdf: {\n        data: base64,\n        mimeType: 'application/pdf',\n        fileName: filename,\n        fileExtension: 'pdf'\n      }\n    }\n  };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1552,
+          336
+        ],
+        "id": "e7f8a9b0-c1d2-3456-7890-123456789012",
+        "name": "PDF Binary Hazirla"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "=http://rapor-api:5050/rapor/{{ $json.tip }}",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify($json.tip === \"kisi\" ? {kisi: $json.kisi, alacaklar: $json.kisi_alacaklar} : $json.tip === \"haftalik\" ? {kisiler: $json.kisiler, alacaklar: $json.alacaklar, company_name: $json.sirket_adi} : $json.tip === \"yillik\" ? {kisiler: $json.kisiler, alacaklar: $json.alacaklar, yil: $json.yil, company_name: $json.sirket_adi} : {kisiler: $json.kisiler, alacaklar: $json.alacaklar, yil: $json.yil, ay: $json.ay, company_name: $json.sirket_adi}) }}",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          1776,
+          -448
+        ],
+        "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000001",
+        "name": "Rapor API Cagir Chatbot"
+      },
+      {
+        "parameters": {
+          "jsCode": "const chatId = $('Build Report Chatbot').first().json.chatId;\nconst tip    = $('Build Report Chatbot').first().json.tip;\nreturn [{ json: {\n  base64:   $json.base64,\n  filename: $json.filename,\n  ozet:     $json.summary,\n  chatId,\n  tip,\n  pdf:      $json.base64,\n}}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2224,
+          -448
+        ],
+        "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000002",
+        "name": "Rapor Yanit Hazirla Chatbot"
+      },
+      {
+        "parameters": {
+          "fromEmail": "your-gmail@gmail.com",
+          "toEmail": "your-recipient@gmail.com",
+          "subject": "={{ \"Payment Tracking — \" + ($json.tip === 'weekly' ? 'Weekly' : $json.tip === 'monthly' ? 'Monthly' : $json.tip === 'yearly' ? 'Yearly' : $json.tip === 'general' ? 'General' : 'Client') + \" Report\" }}",
+          "html": "={{ `<p>Hello,</p><p>Talep ettiğiniz <strong>${($json.tip === 'weekly' ? 'Weekly' : $json.tip === 'monthly' ? 'Monthly' : $json.tip === 'yearly' ? 'Yearly' : $json.tip === 'general' ? 'General' : 'Client')} Report</strong> is attached as a PDF.</p><hr><pre style=\"background:#f5f5f5;padding:12px;border-radius:4px;font-size:13px\">${$json.summary}</pre><p style=\"color:#888;font-size:12px\">Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}<br>Payment Tracking Ödeme Takip Sistemi</p>` }}",
+          "options": {
+            "attachments": "pdf"
+          }
+        },
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 2.1,
+        "position": [
+          2896,
+          -448
+        ],
+        "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000003",
+        "name": "Gmail Gonder Chatbot",
+        "webhookId": "YOUR_WEBHOOK_UUID_3",
+        "credentials": {
+          "smtp": {
+            "id": "gfWT1yDfNEzb7xI5",
+            "name": "Gmail SMTP"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "// WAHA çıktısından sonra — Rapor Yanit Hazirla Chatbot'tan base64 alıp binary'e çevir\nconst wahaItems = $input.all();\nconst raporItems = $('Prepare Report Reply Chatbot').all();\n\nreturn wahaItems.map((_, i) => {\n  const rapor = raporItems[i] ? raporItems[i].json : {};\n  const base64 = rapor.base64 || rapor.pdf || '';\n  const filename = rapor.filename || 'rapor.pdf';\n  const chatId = rapor.chatId || '';\n  return {\n    json: { tip: rapor.tip || '', ozet: rapor.summary || '', filename, chatId, base64 },\n    binary: {\n      pdf: {\n        data: base64,\n        mimeType: 'application/pdf',\n        fileName: filename,\n        fileExtension: 'pdf'\n      }\n    }\n  };\n});"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2672,
+          -448
+        ],
+        "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000004",
+        "name": "PDF Binary Hazirla Chatbot"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict"
+            },
+            "conditions": [
+              {
+                "id": "no-pdf-check",
+                "leftValue": "={{ $json.no_pdf }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "true"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1776,
+          -448
+        ],
+        "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000005",
+        "name": "IF No PDF"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://waha:3000/api/sendText",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "YOUR_WAHA_API_KEY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "session",
+                "value": "default"
+              },
+              {
+                "name": "chatId",
+                "value": "={{ $('Build Report Chatbot').first().json.chatId }}"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json.summary }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.3,
+        "position": [
+          2000,
+          -304
+        ],
+        "id": "a1b2c3d4-e5f6-7890-abcd-chatbot000006",
+        "name": "WAHA No PDF Mesaj"
+      },
+      {
+        "parameters": {
+          "jsCode": "// Gemini yanıtını parse et\nconst raw = $json.candidates?.[0]?.content?.parts?.[0]?.text || '';\n\nif (raw && raw.trim()) {\n  let parsed;\n  try { parsed = JSON.parse(raw); } catch(e) { parsed = { intent: 'out_of_scope' }; }\n  const result = {\n    intent:    parsed.intent    || 'out_of_scope',\n    name:      parsed.name      || null,\n    telefon:   parsed.phone   || null,\n    receivable_no: parsed.receivable_no || null,\n    client_id:   parsed.client_id   || null,\n    report_year: parsed.report_year || null,\n    report_month:  parsed.report_month  || null,\n  };\n  return [{ json: { text: JSON.stringify(result) } }];\n}\n\n// Gemini başarısız → keyword fallback\nconst orijinal = $('Webhook').item.json.body?.payload?.body || '';\nlet message = orijinal.toLowerCase()\n  .replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')\n  .replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');\n\nlet intent = 'out_of_scope';\nlet clientName = null, reportYear = null, raporAy = null, telefon = null, receivableNo = null;\n\nfunction extractName(text) {\n  const temizle = ['borcu','borcunu','borclu','ne','kadar','nedir','alacagi','alacak',\n    'odedi','mi','odeme','durumu','kalan','tutar','var','nasil','olan','raporu','sorgu'];\n  const orig = orijinal.split(/\\s+/).filter(k => {\n    const kl = k.toLowerCase().replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ç/g,'c');\n    return !temizle.includes(kl) && k.length > 1;\n  });\n  return orig.length > 0 ? orig.join(' ') : null;\n}\n\n// 1. Alacak no (A001 formatı)\nconst alacakMatch = message.match(/\\ba\\d{3}\\b/);\nif (alacakMatch) {\n  intent = 'receivable_query';\n  receivableNo = alacakMatch[0].toUpperCase();\n}\n// 2. Telefon\nelse if (/\\b0?5[0-9]{9}\\b/.test(mesaj.replace(/[\\s\\-]/g,''))) {\n  intent = 'phone_query';\n  const m = message.replace(/[\\s\\-]/g,'').match(/0?5[0-9]{9}/);\n  if (m) phoneNum = m[0];\n}\n// 3. Kişi sorgu — BELİRLİ kişi için soru (ne kadar, borcu, borcunu — kişi odaklı)\n// \"ne kadar borçlu\", \"Ahmet borcu nedir\", \"Mehmet Demir ne kadar\"\nelse if (/borcu\\b|borcunu\\b|ne kadar.*borclu|ne kadar.*alacak|odedi mi|odeme durumu/.test(mesaj)) {\n  intent = 'client_query';\n  isim = extractName(mesaj);\n}\n// 4. Yearly report — \"rapor\" kelimesi gerekmez; yıl+özet/durum veya yıllık yeterli\nelse if (/yillik/.test(mesaj) || (/\\b(20\\d{2})\\b/.test(mesaj) && /ozet|durum|nasil|bakis|gitti|rapor/.test(mesaj))) {\n  intent = 'yearly_report';\n  const m = message.match(/\\b(20\\d{2})\\b/);\n  if (m) reportYear = parseInt(m[1]);\n}\nelse if (/rapor/.test(mesaj) && /yillik|yil rapor|yili rapor/.test(mesaj)) {\n  intent = 'yearly_report';\n  const m = message.match(/\\b(20\\d{2})\\b/);\n  if (m) reportYear = parseInt(m[1]);\n}\n// 5. Genel rapor\nelse if (/rapor/.test(mesaj) && /genel|tum donem/.test(mesaj)) {\n  intent = 'general_report';\n}\n// 6. Weekly report\nelse if (/rapor/.test(mesaj) && /haftalik|bu hafta/.test(mesaj)) {\n  intent = 'weekly_report';\n}\n// 7. Monthly report\nelse if (/rapor/.test(mesaj)) {\n  const aylar = {ocak:1,subat:2,mart:3,nisan:4,mayis:5,haziran:6,temmuz:7,agustos:8,eylul:9,ekim:10,kasim:11,aralik:12};\n  let ayBulundu = null;\n  for (const [ad, no] of Object.entries(aylar)) {\n    if (message.includes(ad)) { ayBulundu = no; break; }\n  }\n  if (ayBulundu) {\n    intent = 'monthly_report'; raporAy = ayBulundu;\n    const m = message.match(/\\b(20\\d{2})\\b/);\n    if (m) reportYear = parseInt(m[1]);\n  } else {\n    const yilM = message.match(/\\b(20\\d{2})\\b/);\n    if (yilM) { intent = 'yearly_report'; reportYear = parseInt(yilM[1]); }\n    else { intent = 'weekly_report'; }\n  }\n}\n// 8. Bu ay vadesi dolan\nelse if (/bu ay.*vade|bu ay.*odeme|bu ayki|bu ay kim/.test(mesaj)) {\n  intent = 'due_this_month';\n}\n// 9. Vadesi geçenler — \"kimler borçlu\", \"geciken\", \"yapmadı\"\nelse if (/vade.*gec|gecik|odeme.*yapmad|kimler.*borclu|borclu.*kimler/.test(mesaj)) {\n  intent = 'overdue';\n}\n// 10. Özet\nelse if (/ozet|genel durum|toplam|kac alacak|butun kayit|genel bakis|kac kisi/.test(mesaj)) {\n  intent = 'summary';\n}\n// 11. Yardım\nelse if (/yardim|ne yapabilir|merhaba|selam|komut|nasil kullan/.test(mesaj)) {\n  intent = 'help';\n}\n\nconst result = { intent, clientName, phoneNum, receivable_no: alacakNo, client_id: null, report_year: raporYil, report_month: raporAy };\nreturn [{ json: { text: JSON.stringify(result) } }];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          640,
+          -224
+        ],
+        "id": "bfa461e2-3c84-4701-b7be-1f78df144300",
+        "name": "Intent Parse"
+      },
+      {
+        "parameters": {
+          "jsCode": "let message = $('Webhook').item.json.body?.payload?.body || '';\n\nconst systemPrompt = `You are the NLU engine of a contractor receivables tracking system. Analyze the user's WhatsApp message and respond ONLY in the following JSON format, nothing else:\n\n{\"intent\":\"...\",\"isim\":null,\"telefon\":null,\"alacak_no\":null,\"kisi_id\":null,\"rapor_yil\":null,\"rapor_ay\":null}\n\n=== QUERY INTENTS (text response, no PDF) ===\n- client_query: Search by client name or company. Examples: \"Ahmet Yılmaz borcu nedir\", \"Mehmet Demir ne kadar borçlu\", \"ABC İnşaat borcu\"\n- contact_query: Query email or contact info. Examples: \"Ahmet Yılmaz'ın maili nedir\"\n- phone_query: Search by phone number. Examples: \"0532... numaralı kişi\"\n- receivable_query: Receivable number (A001 format). Examples: \"A023 alacağı\", \"A001 nedir\"\n- overdue: Past-due payments. Examples: \"vadesi geçenler kimler\", \"geciken ödemeler\", \"kim ödeme yapmadı\", \"kimler borçlu\"\n- due_this_month: Payments due this month. Examples: \"bu ay vadesi dolan kimler\", \"bu ay kim ödeme yapacak\", \"bu ayki vadeler\"\n- ozet: Genel istatistik ve özet bilgi (no year). Examples: \"özet\", \"genel durum\", \"kaç alacak var\", \"toplam ne kadar\", \"bütün kayıtları göster\", \"genel bakış\"\n- help: System help. Examples: \"yardım\", \"ne yapabilirsin\", \"merhaba\", \"nasıl kullanılır\"\n- out_of_scope: Unrelated questions. Examples: \"hava nasıl\", \"ne zaman gelecek\"\n\n=== REPORT INTENTS (generates PDF and sends via email) ===\nKullanıcı \"rapor\", \"pdf\", \"oluştur\", \"gönder\" demese bile niyet rapor almaksa rapor intentini seç.\n- weekly_report: Weekly PDF report request. Examples: \"haftalık rapor gönder\", \"bu haftanın raporunu oluştur\", \"haftalık durum\"\n- monthly_report: Monthly PDF report. Fill report_month (1-12) and report_year. Examples: \"ocak raporu\", \"şubat aylık raporu\", \"mart 2025 raporu\", \"ocak ayı durumu\"\n- yearly_report: Yearly PDF report. Fill report_year. Examples: \"2025 yılı rapor gönder\", \"yıllık raporu oluştur\", \"2024 raporu\", \"2026 yılı özet\", \"2026 yılı durumu\", \"yıllık durum\", \"2025 nasıl gitti\", \"yıl özeti\"\n- general_report: All-time PDF report. Examples: \"genel rapor gönder\", \"tüm dönem raporu oluştur\"\n- client_report: PDF report for a specific client. Fill name or client_id. Examples: \"Ahmet Yılmaz raporu gönder\", \"K005 raporu oluştur\"\n\n=== CRITICAL RULES ===\n1. Specific year (2024, 2025, 2026...) + summary/status/report/how → yearly_report, fill report_year\n2. \"bütün kayıtları göster\", \"genel bakış\", \"ne kadar alacak var\" (yıl olmadan) → ozet\n3. \"bu ay vadesi dolan\", \"bu ay kimlerin ödemeleri yaklaşıyor\" → bu_ay_vadesi_dolan\n4. When uncertain, choose the closest intent rather than out_of_scope\n5. \"özet\" kelimesi tek başına gelirse → ozet; yıl ile gelirse (\"2026 yılı özet\") → yillik_rapor`;\n\nreturn [{\n  json: {\n    contents: [{ role: \"user\", parts: [{ text: mesaj }] }],\n    systemInstruction: { parts: [{ text: systemPrompt }] },\n    generationConfig: { responseMimeType: \"application/json\", temperature: 0.1 }\n  }\n}];"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          192,
+          -224
+        ],
+        "id": "c6985cc7-e6d4-4cdf-9755-4ce302a7f060",
+        "name": "Gemini Request Hazirla"
+      },
+      {
+        "parameters": {
+          "content": "## 🔔 Günlük Hatırlatma\nHer gün 11:00'de çalışır.\nVadesi geçen/yaklaşan alacakları müteahhite WP ile bildirir.\n\nEskalasyon: Gün 0, +1, +3, +5, her 5 günde bir\nMax 30 kayıt gösterir.",
+          "height": 512,
+          "width": 1480,
+          "color": 3
+        },
+        "id": "sticky-hatirlatma",
+        "name": "Not: Hatirlatma",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          -304,
+          704
+        ]
+      },
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 11-22 * * *"
+              }
+            ]
+          }
+        },
+        "id": "hat-trigger-01",
+        "name": "Hatirlatma Trigger",
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [
+          -224,
+          880
+        ]
+      },
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "hat-test-001",
+          "options": {}
+        },
+        "id": "hat-webhook-01",
+        "name": "Hat Test Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          -224,
+          1072
+        ],
+        "webhookId": "hat-test-001"
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEETS_ID",
+            "mode": "list"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "YOUR_KISILER_GID",
+            "mode": "list"
+          },
+          "options": {}
+        },
+        "id": "hat-kisiler-01",
+        "name": "Hat Kisiler Getir",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          16,
+          976
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const clients = $input.all().map(i => i.json);\nreturn [{ json: { kisiler } }];"
+        },
+        "id": "hat-kisiler-topla-01",
+        "name": "Hat Kisiler Topla",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          240,
+          976
+        ]
+      },
+      {
+        "parameters": {
+          "documentId": {
+            "__rl": true,
+            "value": "YOUR_GOOGLE_SHEETS_ID",
+            "mode": "list"
+          },
+          "sheetName": {
+            "__rl": true,
+            "value": "YOUR_ALACAKLAR_GID",
+            "mode": "list"
+          },
+          "options": {}
+        },
+        "id": "hat-alacaklar-01",
+        "name": "Hat Alacaklar Getir",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 4.5,
+        "position": [
+          464,
+          976
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const clientsRaw = $('Collect Reminder Clients').first().json.clients;\nconst receivablesRaw = $input.all().map(i => i.json);\n\nconst receivables = alacaklarRaw.map(a => {\n  const odenen = parseFloat(String(a.paid_amount || 0).replace(',', '.')) || 0;\n  const toplam = parseFloat(String(a.total_amount || 0).replace(',', '.')) || 0;\n  return {\n    ...a,\n    durum: odenen >= toplam ? 'Paid' : (odenen <= 0 ? 'Unpaid' : 'Partial'),\n    kalan_tutar: Math.max(0, toplam - odenen),\n  };\n});\n\nconst clientsMap = {};\nfor (const k of kisilerRaw) kisilerMap[k.client_id] = k;\n\nconst bugun = new Date();\nbugun.setHours(0, 0, 0, 0);\n\nfunction parseDate(s) {\n  if (!s || s === '-') return null;\n  s = String(s).trim();\n  const p = s.split('.');\n  if (p.length === 3 && p[0].length <= 2) {\n    const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));\n    return isNaN(d.getTime()) ? null : d;\n  }\n  if (s.includes('-')) {\n    const d = new Date(s.slice(0, 10));\n    return isNaN(d.getTime()) ? null : d;\n  }\n  return null;\n}\n\nfunction daysDiff(vade) {\n  if (!vade) return null;\n  return Math.floor((bugun.getTime() - vade.getTime()) / 86400000);\n}\n\nfunction reminderDue(gec) {\n  if (gec < 0) return false;\n  return gec === 0 || gec === 1 || gec === 3 || (gec >= 5 && gec % 5 === 0);\n}\n\nfunction formatAmount(n) {\n  return Math.round(n).toLocaleString('tr-TR') + ' TL';\n}\n\nconst records = [];\n\nfor (const a of alacaklar) {\n  if (a.status === 'Paid') continue;\n  const vade = parseDate(a.due_date);\n  if (!vade) continue;\n  const gec = daysDiff(vade);\n  if (!reminderDue(gec)) continue;\n  const kisi = kisilerMap[a.client_id];\n  if (!kisi || client.active === 'No') continue;\n\n  records.push({ kisi, alacak: a, gec, kalan: a.remaining_amount });\n}\n\nif (records.length === 0) return [];\n\nrecords.sort((a, b) => b.gec - a.gec);\n\nconst MAX_KAYIT = 30;\nconst displayed = records.slice(0, MAX_KAYIT);\nconst remainingCount = records.length - displayed.length;\n\nconst dateStr = bugun.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });\nlet message = `🔔 *Günlük Ödeme Takibi — ${dateStr}*\\n`;\nmessage += `📋 ${records.length} kayıt hatırlatma bekliyor\\n\\n`;\n\nfor (const { client, receivable, daysLate, remaining } of displayed) {\n  const overdueLabel = gec === 0 ? '⚠️ Bugün vade' : `🔴 ${gec} gün gecikmiş`;\n  message += `👤 *${kisi.full_name}*\\n`;\n  message += `   ${alacak.project_name} — ${formatAmount(kalan)}\\n`;\n  message += `   ${overdueLabel}\\n`;\n  if (kisi.phone) message += `   📞 ${kisi.phone}\\n`;\n  message += '\\n';\n}\n\nif (kalan_sayisi > 0) message += `...ve ${kalan_sayisi} kayıt daha\\n\\n`;\n\nconst toplam = records.reduce((s, r) => s + r.kalan, 0);\nmessage += `─────────────────\\n💳 *Toplam: ${formatAmount(total)}*`;\n\nreturn [{ json: { message } }];"
+        },
+        "id": "hat-hesapla-01",
+        "name": "Hatirlatma Hesapla",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          688,
+          976
+        ]
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://waha:3000/api/sendText",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "YOUR_WAHA_API_KEY"
+              }
+            ]
+          },
+          "sendBody": true,
+          "bodyParameters": {
+            "parameters": [
+              {
+                "name": "session",
+                "value": "default"
+              },
+              {
+                "name": "chatId",
+                "value": "YOUR_CONTRACTOR_NUMBER@c.us"
+              },
+              {
+                "name": "text",
+                "value": "={{ $json.mesaj }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "hat-waha-01",
+        "name": "Hat WAHA Gonder",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          896,
+          976
+        ]
+      },
+      {
+        "id": "hat-log-oku-01",
+        "name": "Hat Log Oku",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          240,
+          1280
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        },
+        "parameters": {
+          "method": "GET",
+          "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEETS_ID/values/Rapor_Log",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleSheetsOAuth2Api",
+          "options": {}
+        }
+      },
+      {
+        "id": "hat-gonderildi-mi-01",
+        "name": "Hat Gonderildi Mi",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          464,
+          1280
+        ],
+        "parameters": {
+          "jsCode": "const response = $input.first().json;\nconst values = response.values || [];\n\n// Bugünün tarihi (Istanbul)\nconst now = new Date();\nconst istanbul = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Istanbul' }));\nconst today = istanbul.toLocaleDateString('tr-TR'); // \"18.03.2026\"\n\n// İlk satır header, geri kalanlar veri\nif (values.length < 2) {\n  return [{ json: { send: true } }];\n}\n\nconst headers = values[0];\nconst tipIdx = headers.indexOf('rapor_tipi');\nconst tarihIdx = headers.indexOf('tarih');\n\nconst bugunGonderildi = values.slice(1).some(row => {\n  const tip = tipIdx >= 0 ? (row[tipIdx] || '') : (row[0] || '');\n  const tarih = tarihIdx >= 0 ? (row[tarihIdx] || '') : (row[2] || '');\n  return String(tip).trim() === 'hatirlatma' && String(tarih).startsWith(today);\n});\n\nif (bugunGonderildi) {\n  return []; // Bugün zaten gönderildi\n}\n\nreturn [{ json: { send: true } }];"
+        }
+      },
+      {
+        "id": "hat-log-kaydet-01",
+        "name": "Hat Log Kaydet",
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1120,
+          976
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "YOUR_CREDENTIAL_ID",
+            "name": "Google Sheets account"
+          }
+        },
+        "parameters": {
+          "method": "POST",
+          "url": "https://sheets.googleapis.com/v4/spreadsheets/YOUR_GOOGLE_SHEETS_ID/values/Rapor_Log:append",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "googleSheetsOAuth2Api",
+          "sendQuery": true,
+          "queryParameters": {
+            "parameters": [
+              {
+                "name": "valueInputOption",
+                "value": "RAW"
+              },
+              {
+                "name": "insertDataOption",
+                "value": "INSERT_ROWS"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ values: [[ 'hatirlatma', new Date().toLocaleDateString('tr-TR', {timeZone:'Europe/Istanbul'}), new Date().toLocaleString('tr-TR', {timeZone:'Europe/Istanbul'}), 'gonderildi' ]] }) }}",
+          "options": {}
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "Gemini Request Hazirla",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Gemini NLU": {
+        "main": [
+          [
+            {
+              "node": "Intent Parse",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Sheet - Kisiler Getir": {
+        "main": [
+          [
+            {
+              "node": "Kisiler Topla",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Sheet - Alacaklar Getir": {
+        "main": [
+          [
+            {
+              "node": "Ana İslem",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Ana İslem": {
+        "main": [
+          [
+            {
+              "node": "IF Rapor Bransi",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF Rapor Bransi": {
+        "main": [
+          [
+            {
+              "node": "Rapor Olustur Chatbot",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor Olustur Chatbot": {
+        "main": [
+          [
+            {
+              "node": "Rapor API Cagir Chatbot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "WAHA Rapor Metin": {
+        "main": [
+          [
+            {
+              "node": "PDF Binary Hazirla Chatbot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kisiler Topla": {
+        "main": [
+          [
+            {
+              "node": "Google Sheet - Alacaklar Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor Kontrol Trigger": {
+        "main": [
+          [
+            {
+              "node": "Rapor Log Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor Log Getir": {
+        "main": [
+          [
+            {
+              "node": "Log Topla",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Kisiler Getir": {
+        "main": [
+          [
+            {
+              "node": "Alacaklar Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Alacaklar Getir": {
+        "main": [
+          [
+            {
+              "node": "Eksik Hesapla",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Eksik Hesapla": {
+        "main": [
+          [
+            {
+              "node": "Rapor Olustur",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor Olustur": {
+        "main": [
+          [
+            {
+              "node": "Rapor API Cagir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "WAHA Metin Gonder": {
+        "main": [
+          [
+            {
+              "node": "PDF Binary Hazirla",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "WAHA PDF Gonder": {
+        "main": [
+          [
+            {
+              "node": "Gmail Gonder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gmail Gonder": {
+        "main": [
+          [
+            {
+              "node": "Rapor Log Kaydet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Log Topla": {
+        "main": [
+          [
+            {
+              "node": "Kisiler Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "ORK Test Webhook": {
+        "main": [
+          [
+            {
+              "node": "Rapor Log Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor API Cagir": {
+        "main": [
+          [
+            {
+              "node": "Rapor Birlestir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor Birlestir": {
+        "main": [
+          [
+            {
+              "node": "WAHA Metin Gonder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PDF Binary Hazirla": {
+        "main": [
+          [
+            {
+              "node": "WAHA PDF Gonder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor API Cagir Chatbot": {
+        "main": [
+          [
+            {
+              "node": "IF No PDF",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Rapor Yanit Hazirla Chatbot": {
+        "main": [
+          [
+            {
+              "node": "WAHA Rapor Metin",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "PDF Binary Hazirla Chatbot": {
+        "main": [
+          [
+            {
+              "node": "WAHA Rapor PDF",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Gmail Gonder Chatbot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "IF No PDF": {
+        "main": [
+          [
+            {
+              "node": "WAHA No PDF Mesaj",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Rapor Yanit Hazirla Chatbot",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Intent Parse": {
+        "main": [
+          [
+            {
+              "node": "Google Sheet - Kisiler Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gemini Request Hazirla": {
+        "main": [
+          [
+            {
+              "node": "Gemini NLU",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hatirlatma Trigger": {
+        "main": [
+          [
+            {
+              "node": "Hat Log Oku",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hat Test Webhook": {
+        "main": [
+          [
+            {
+              "node": "Hat Kisiler Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hat Kisiler Getir": {
+        "main": [
+          [
+            {
+              "node": "Hat Kisiler Topla",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hat Kisiler Topla": {
+        "main": [
+          [
+            {
+              "node": "Hat Alacaklar Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hat Alacaklar Getir": {
+        "main": [
+          [
+            {
+              "node": "Hatirlatma Hesapla",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hatirlatma Hesapla": {
+        "main": [
+          [
+            {
+              "node": "Hat WAHA Gonder",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "WAHA Rapor PDF": {
+        "main": [
+          []
+        ]
+      },
+      "Hat Log Oku": {
+        "main": [
+          [
+            {
+              "node": "Hat Gonderildi Mi",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hat Gonderildi Mi": {
+        "main": [
+          [
+            {
+              "node": "Hat Kisiler Getir",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Hat WAHA Gonder": {
+        "main": [
+          [
+            {
+              "node": "Hat Log Kaydet",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "Mustafa p",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-18T19:16:37.009Z",
+        "id": 41,
+        "workflowId": "YOUR_WORKFLOW_ID",
+        "versionId": "855647bd-e091-4349-9ad6-00d255e83e9f",
+        "event": "activated",
+        "userId": "YOUR_USER_ID"
+      }
+    ]
+  }
+}
