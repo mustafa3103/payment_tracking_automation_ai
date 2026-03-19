@@ -230,7 +230,3 @@ python3 scripts/test_reports.py
 - The system currently runs locally. For production use, deploy to a VPS/cloud server.
 
 ---
-
-## License
-
-MIT
